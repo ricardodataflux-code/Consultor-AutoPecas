@@ -50,6 +50,7 @@ export interface QueryResult {
   verifiedSources?: VerifiedSource[];
   officialCatalogs?: OfficialCatalogPortal[];
   usedFallback?: boolean;
+  quotaExceeded?: boolean;
 }
 
 export interface VehiclePreset {

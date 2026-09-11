@@ -312,8 +312,8 @@ export const QueryForm: React.FC<QueryFormProps> = ({
         {/* Submit Button Bar */}
         <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span>Triagem automática: se faltar dados críticos, o sistema listará perguntas antes de fechar os códigos.</span>
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+            <span>Pesquisa por IA consultando os catálogos oficiais online (Nakata, Cofap, Bosch, Monroe, LUK, Cobreq).</span>
           </div>
 
           <button
@@ -325,12 +325,12 @@ export const QueryForm: React.FC<QueryFormProps> = ({
             {isLoading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                <span>Consultando Balcão & Catálogos...</span>
+                <span>IA Consultando Catálogos Online...</span>
               </>
             ) : (
               <>
                 <Search className="w-4 h-4" />
-                <span>Consultar Peça no Balcão (F2)</span>
+                <span>Pesquisar por IA nos Catálogos Online</span>
                 <ChevronRight className="w-4 h-4" />
               </>
             )}

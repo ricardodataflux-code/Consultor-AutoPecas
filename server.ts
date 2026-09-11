@@ -3,6 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 import { createServer as createViteServer } from "vite";
+import { generateInstantCatalogResult } from "./src/data/partsCatalogEngine.js";
 
 dotenv.config();
 
@@ -380,6 +381,9 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "auto-pecas-balcao-rio-claro" });
 });
 
+// Circuit breaker for external AI API to handle quota/rate-limits cleanly
+let geminiCooldownUntil = 0;
+
 app.post("/api/query-part", async (req, res) => {
   try {
     const { vehicle, year, part, engine, notes, answers } = req.body;
@@ -390,72 +394,161 @@ app.post("/api/query-part", async (req, res) => {
 
     let markdown = "";
     let usedFallback = false;
-
+    let isQuotaExceeded = false;
     let verifiedSources: Array<{ title: string; uri: string }> = [];
 
-    try {
-      const ai = getGeminiClient();
+    // Relevant catalog portals according to part type
+    const pLower = (part || "").toLowerCase();
+    const relevantCatalogs: Array<{ title: string; uri: string }> = [];
 
-      let userPrompt = `CONSULTA DE BALCÃO:\nPeça: ${part}\nVeículo: ${vehicle}\nAno: ${year || "Não informado"}`;
-      if (engine) {
-        userPrompt += `\nMotorização / Detalhes informados: ${engine}`;
-      }
-      if (notes) {
-        userPrompt += `\nObservações adicionais do cliente: ${notes}`;
-      }
-      if (answers && Object.keys(answers).length > 0) {
-        userPrompt += `\n\nRESPOSTAS ÀS PERGUNTAS DE CONFIRMAÇÃO DADAS PELO CLIENTE:\n` +
-          Object.entries(answers)
-            .map(([q, a]) => `- ${q}: ${a}`)
-            .join("\n");
-        userPrompt += `\nCom base nessas respostas confirmadas pelo cliente, gere agora os CÓDIGOS DE REFERÊNCIA exatos e todas as 6 seções completas.`;
-      }
-
-      const timeoutPromise = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout na consulta à IA")), 8000)
+    if (pLower.includes("amortecedor") || pLower.includes("suspens") || pLower.includes("pivo") || pLower.includes("terminal") || pLower.includes("bandeja")) {
+      relevantCatalogs.push(
+        { title: "Catálogo Nakata Online (Suspensão & Direção)", uri: `https://www.nakata.com.br/catalogo?busca=${encodeURIComponent(vehicle + " " + (year || "") + " " + part)}` },
+        { title: "Catálogo COFAP / Magneti Marelli Online", uri: "https://catalogo.cofap.com.br/" },
+        { title: "Monroe & Monroe Axios Catálogo Eletrônico", uri: "https://monroe.com.br/catalogo-online/" },
+        { title: "Catálogo Viemar Suspensão & Direção", uri: "https://www.viemar.com.br/catalogo/" },
       );
-
-      const response: any = await Promise.race([
-        ai.models.generateContent({
-          model: "gemini-3.8-flash",
-          contents: userPrompt,
-          config: {
-            systemInstruction: SYSTEM_INSTRUCTION,
-            tools: [{ googleSearch: {} }],
-            temperature: 0.1,
-          },
-        }),
-        timeoutPromise,
-      ]);
-
-      if (response.text && response.text.trim()) {
-        markdown = response.text;
-
-        // Extract verified online catalog sources from Google Search grounding
-        const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-        verifiedSources = chunks
-          .map((chunk: any) => ({
-            title: chunk.web?.title || "Catálogo do Fabricante",
-            uri: chunk.web?.uri || "",
-          }))
-          .filter((s: any) => s.uri);
-      } else {
-        throw new Error("Resposta vazia da IA.");
-      }
-    } catch (apiErr: any) {
-      console.warn("Gemini API indisponível ou quota excedida, ativando catálogo inteligente:", apiErr?.message);
-      usedFallback = true;
-      markdown = generateCatalogFallback(vehicle, year, part, engine, notes, answers);
-
-      // Default verified official catalog portals
-      verifiedSources = [
+    } else if (pLower.includes("pastilha") || pLower.includes("freio") || pLower.includes("disco") || pLower.includes("tambor") || pLower.includes("sapata") || pLower.includes("cilindro")) {
+      relevantCatalogs.push(
+        { title: "Catálogo Online Cobreq TMD Friction", uri: "https://catalogo.cobreq.com.br/" },
+        { title: "Catálogo Fras-le Auto Online", uri: "https://catalogofras-le.com/" },
+        { title: "Catálogo Fremax Discos & Tambores", uri: "https://www.fremax.com.br/catalogo/" },
+        { title: "Bosch Auto Parts Brasil (Freios)", uri: "https://www.boschaftermarket.com/br/pt/produtos/catalogo/" },
+      );
+    } else if (pLower.includes("embreagem") || pLower.includes("atuador") || pLower.includes("plato") || pLower.includes("disco embreagem")) {
+      relevantCatalogs.push(
+        { title: "Portal Schaeffler RepXpert (Embreagens LUK)", uri: "https://www.repxpert.com.br/pt/catalog" },
+        { title: "Catálogo Sachs ZF Aftermarket Online", uri: "https://aftermarket.zf.com/br/pt/catalogo/" },
+        { title: "Catálogo Valeo Service Online", uri: "https://www.valeoservice.com.br/pt-br/catalogo" },
+      );
+    } else if (pLower.includes("filtro") || pLower.includes("oleo") || pLower.includes("ar") || pLower.includes("combustivel") || pLower.includes("cabine")) {
+      relevantCatalogs.push(
+        { title: "Catálogo Tecfil Filtros Online", uri: "https://www.tecfil.com.br/catalogo/" },
+        { title: "Catálogo Mahle Metal Leve Online", uri: "https://catalog.mahle-aftermarket.com/br/" },
+        { title: "Catálogo Fram / Mann Filter Online", uri: "https://catalog.mann-filter.com/" },
+      );
+    } else if (pLower.includes("correia") || pLower.includes("tensor") || pLower.includes("dentada") || pLower.includes("poly-v") || pLower.includes("alternador")) {
+      relevantCatalogs.push(
+        { title: "Catálogo Gates Brasil Online", uri: "https://www.gatesbrasil.com.br/catalogo" },
+        { title: "Catálogo Dayco Aftermarket Online", uri: "https://www.daycoaftermarket.com/pt/catalogo/" },
+        { title: "Catálogo Continental ContiTech Online", uri: "https://www.continental-engineparts.com/pt/" },
+      );
+    } else {
+      relevantCatalogs.push(
         { title: "Catálogo Nakata Online Oficial", uri: "https://www.nakata.com.br/catalogo" },
         { title: "Catálogo Eletrônico COFAP / Magneti Marelli", uri: "https://catalogo.cofap.com.br/" },
-        { title: "Portal Schaeffler RepXpert (Embreagens LUK)", uri: "https://www.repxpert.com.br/pt/catalog" },
         { title: "Bosch Auto Parts eCat Online", uri: "https://www.boschaftermarket.com/br/pt/produtos/catalogo/" },
-        { title: "Catálogo Online Cobreq TMD Friction", uri: "https://catalogo.cobreq.com.br/" },
-        { title: "Catálogo Oficial SABÓ Vedação", uri: "https://catalogo.sabo.com.br/" },
-      ];
+        { title: "Portal Schaeffler RepXpert (LUK/INA/FAG)", uri: "https://www.repxpert.com.br/pt/catalog" },
+        { title: "Catálogo Sabó Vedação & Retentores", uri: "https://catalogo.sabo.com.br/" },
+      );
+    }
+
+    const now = Date.now();
+    const canTryAi = now >= geminiCooldownUntil && Boolean(process.env.GEMINI_API_KEY);
+
+    if (canTryAi) {
+      try {
+        const ai = getGeminiClient();
+
+        let userPrompt = `CONSULTA DE BALCÃO DE AUTOPEÇAS (PESQUISA EM CATÁLOGOS ONLINE):\n` +
+          `Peça Solicitada: ${part}\n` +
+          `Veículo: ${vehicle}\n` +
+          `Ano: ${year || "Não informado"}`;
+
+        if (engine) {
+          userPrompt += `\nMotorização / Detalhes informados: ${engine}`;
+        }
+        if (notes) {
+          userPrompt += `\nObservações adicionais do cliente: ${notes}`;
+        }
+        if (answers && Object.keys(answers).length > 0) {
+          userPrompt += `\n\nRESPOSTAS ÀS PERGUNTAS DE CONFIRMAÇÃO DADAS PELO CLIENTE:\n` +
+            Object.entries(answers)
+              .map(([q, a]) => `- ${q}: ${a}`)
+              .join("\n");
+          userPrompt += `\nCom base nessas respostas confirmadas pelo cliente, consulte os catálogos eletrônicos e gere agora os CÓDIGOS DE REFERÊNCIA exatos e todas as 6 seções completas.`;
+        } else {
+          userPrompt += `\nPor favor, consulte os catálogos online oficiais dos fabricantes (Nakata, Cofap, Monroe, Bosch, Cobreq, LUK, etc.) e forneça as 6 seções padrão para o balcão.`;
+        }
+
+        // Fast 5s timeout to keep desk response fast and snappy
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout na consulta à IA")), 5000)
+        );
+
+        // Model preference: gemini-2.5-flash
+        const response: any = await Promise.race([
+          ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: userPrompt,
+            config: {
+              systemInstruction: SYSTEM_INSTRUCTION,
+              temperature: 0.1,
+            },
+          }),
+          timeoutPromise,
+        ]);
+
+        if (response.text && response.text.trim()) {
+          markdown = response.text;
+
+          const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+          const extractedSources = chunks
+            .map((chunk: any) => ({
+              title: chunk.web?.title || "Catálogo do Fabricante",
+              uri: chunk.web?.uri || "",
+            }))
+            .filter((s: any) => s.uri);
+
+          // Combine grounding sources and relevant manufacturer portals
+          const seenUris = new Set<string>();
+          verifiedSources = [...extractedSources, ...relevantCatalogs].filter((item) => {
+            if (!item.uri || seenUris.has(item.uri)) return false;
+            seenUris.add(item.uri);
+            return true;
+          });
+        } else {
+          throw new Error("Resposta da IA vazia");
+        }
+      } catch (apiErr: any) {
+        usedFallback = true;
+        const errMsg = String(apiErr?.message || apiErr || "");
+        const isQuota =
+          apiErr?.status === 429 ||
+          apiErr?.code === 429 ||
+          errMsg.includes("429") ||
+          errMsg.includes("quota") ||
+          errMsg.includes("RESOURCE_EXHAUSTED") ||
+          errMsg.includes("rate-limits");
+
+        if (isQuota) {
+          isQuotaExceeded = true;
+          // Set 60-second cooldown so subsequent requests don't hit rate limits or trigger errors
+          geminiCooldownUntil = Date.now() + 60_000;
+          console.info("[Balcão Autopeças] Cota diária/taxa da API atingida (429). Ativando catálogo sênior local com links oficiais.");
+        } else if (errMsg.includes("503") || errMsg.includes("high demand")) {
+          geminiCooldownUntil = Date.now() + 30_000;
+          console.info("[Balcão Autopeças] API com alta demanda momentânea (503). Ativando catálogo sênior local.");
+        } else {
+          geminiCooldownUntil = Date.now() + 10_000;
+          console.info("[Balcão Autopeças] Alternando para catálogo sênior local de resposta imediata.");
+        }
+        markdown = generateCatalogFallback(vehicle, year, part, engine, notes, answers);
+        verifiedSources = relevantCatalogs;
+      }
+    } else {
+      usedFallback = true;
+      if (now < geminiCooldownUntil) {
+        isQuotaExceeded = true;
+      }
+      markdown = generateCatalogFallback(vehicle, year, part, engine, notes, answers);
+      verifiedSources = relevantCatalogs;
+    }
+
+    if (!markdown) {
+      usedFallback = true;
+      markdown = generateCatalogFallback(vehicle, year, part, engine, notes, answers);
+      verifiedSources = relevantCatalogs;
     }
 
     // Detect if confirmation questions are pending
@@ -471,6 +564,7 @@ app.post("/api/query-part", async (req, res) => {
       query: { vehicle, year, part, engine, notes },
       hasUnresolvedQuestions,
       usedFallback,
+      quotaExceeded: isQuotaExceeded,
       verifiedSources,
     });
   } catch (error: any) {

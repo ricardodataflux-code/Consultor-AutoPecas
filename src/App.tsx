@@ -45,17 +45,17 @@ export default function App() {
   useEffect(() => {
     if (!isLoading) return;
     const messages = [
-      'Identificando aplicação no TecDoc e SBS...',
-      'Verificando regras de triagem e versões do veículo...',
-      'Cruzando código original com Nakata, Cofap, Monroe, Bosch, Valeo...',
-      'Checando alertas técnicos de montagem e pares...',
-      'Mapeando distribuidores disponíveis em Rio Claro-SP...',
+      'IA consultando os catálogos eletrônicos oficiais online...',
+      'Cruzando catálogos dos fabricantes (Nakata, COFAP, Monroe, Bosch, LUK, Cobreq)...',
+      'Identificando aplicação técnica, motorização e código original (OEM)...',
+      'Localizando códigos exatos de reposição e referências cruzadas...',
+      'Verificando alertas de montagem, pares e fornecedores em Rio Claro-SP...',
     ];
     let idx = 0;
     const interval = setInterval(() => {
       idx = (idx + 1) % messages.length;
       setLoadingMessage(messages[idx]);
-    }, 2200);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [isLoading]);
@@ -107,6 +107,7 @@ export default function App() {
         parsedResult.verifiedSources = data.verifiedSources;
       }
       parsedResult.usedFallback = data.usedFallback;
+      parsedResult.quotaExceeded = data.quotaExceeded;
 
       setActiveResult(parsedResult);
 

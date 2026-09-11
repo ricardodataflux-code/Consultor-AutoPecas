@@ -193,10 +193,11 @@ export function parseSeniorClerkMarkdown(
     ];
   }
 
-  // Map official catalog portals for all referenced brands
+  // Map official catalog portals for all referenced brands and part category
   const brandNamesSeen = new Set<string>();
   const portals: OfficialCatalogPortal[] = [];
 
+  // First add portals from identified codes
   for (const c of result.codes) {
     const p = getBrandCatalogPortal(c.brand);
     if (p && !brandNamesSeen.has(p.name)) {
@@ -211,11 +212,55 @@ export function parseSeniorClerkMarkdown(
     }
   }
 
-  // If none matched, add TecDoc / general automotive catalog reference
-  if (portals.length === 0) {
+  // Also proactively populate major manufacturer catalogs matching the part category
+  const pLower = (query.part || '').toLowerCase();
+  const pushPortalIfNew = (brandKey: string, customName?: string) => {
+    const p = getBrandCatalogPortal(brandKey);
+    if (p && !brandNamesSeen.has(p.name)) {
+      brandNamesSeen.add(p.name);
+      portals.push({
+        brand: p.badge,
+        name: customName || p.name,
+        url: p.portalUrl,
+        badge: p.badge,
+        searchUrl: `https://www.google.com/search?q=${encodeURIComponent('catalogo ' + p.badge + ' ' + query.part + ' ' + query.vehicle)}`,
+      });
+    }
+  };
+
+  if (pLower.includes('amortecedor') || pLower.includes('suspens') || pLower.includes('pivo') || pLower.includes('terminal')) {
+    pushPortalIfNew('nakata', 'Catálogo Nakata Online (Suspensão)');
+    pushPortalIfNew('cofap', 'Catálogo Eletrônico COFAP');
+    pushPortalIfNew('monroe', 'Catálogo Monroe Axios Online');
+    pushPortalIfNew('kyb', 'Catálogo KYB Amortecedores');
+  } else if (pLower.includes('pastilha') || pLower.includes('freio') || pLower.includes('disco')) {
+    pushPortalIfNew('cobreq', 'Catálogo Online Cobreq Freios');
+    pushPortalIfNew('fras-le', 'Catálogo Fras-le Auto');
+    pushPortalIfNew('bosch', 'Catálogo Bosch Auto Parts (Freios)');
+    pushPortalIfNew('syl', 'Catálogo SYL Freios');
+  } else if (pLower.includes('embreagem') || pLower.includes('atuador') || pLower.includes('plato')) {
+    pushPortalIfNew('luk', 'Portal Schaeffler RepXpert (LUK)');
+    pushPortalIfNew('sachs', 'Catálogo Sachs ZF Aftermarket');
+    pushPortalIfNew('valeo', 'Catálogo Valeo Service');
+  } else if (pLower.includes('filtro') || pLower.includes('oleo') || pLower.includes('ar')) {
+    pushPortalIfNew('tecfil', 'Catálogo Tecfil Filtros Online');
+    pushPortalIfNew('mahle', 'Catálogo MAHLE Metal Leve');
+  } else if (pLower.includes('correia') || pLower.includes('tensor') || pLower.includes('dentada')) {
+    pushPortalIfNew('gates', 'Catálogo Gates Brasil Online');
+    pushPortalIfNew('dayco', 'Catálogo Dayco Garage');
+    pushPortalIfNew('continental', 'Catálogo Continental ContiTech');
+  } else {
+    pushPortalIfNew('nakata');
+    pushPortalIfNew('cofap');
+    pushPortalIfNew('bosch');
+    pushPortalIfNew('sabo');
+  }
+
+  // If still empty or as universal reference, add TecDoc
+  if (!brandNamesSeen.has('Catálogo TecDoc Alliance Web')) {
     portals.push({
       brand: 'TecDoc',
-      name: 'Catálogo TecDoc Alliance Web',
+      name: 'Catálogo Eletrônico TecDoc Alliance',
       url: 'https://web.tecalliance.net/tecdocws/pt/home',
       badge: 'TecDoc Global',
       searchUrl: `https://www.google.com/search?q=${encodeURIComponent('catalogo tecdoc ' + query.part + ' ' + query.vehicle)}`,

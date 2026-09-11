@@ -19,6 +19,7 @@ import {
   Truck,
   Building2,
   ShieldCheck,
+  Globe,
 } from 'lucide-react';
 import { QueryResult } from '../types';
 import { formatWhatsAppBudget } from '../utils/parser';
@@ -72,8 +73,34 @@ export const ResultView: React.FC<ResultViewProps> = ({
       {/* Top Action Bar for Balconista */}
       <div className="bg-slate-900 text-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md print:hidden">
         <div>
-          <div className="text-xs text-slate-400 uppercase font-semibold tracking-wider">
-            Consulta Ativa no Balcão
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-slate-400 uppercase font-semibold tracking-wider">
+              Consulta Ativa no Balcão
+            </span>
+            {result.quotaExceeded ? (
+              <span
+                id="badge-quota-notice"
+                className="text-[10px] font-semibold bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs"
+                title="Cota da API externa em resfriamento. Catálogo técnico do balcão e links oficiais em operação normal."
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                Catálogo Técnico Balcão (Cota API em espera)
+              </span>
+            ) : result.usedFallback ? (
+              <span className="text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                Catálogo Técnico Balcão Offline
+              </span>
+            ) : (
+              <span className="text-[11px] font-bold bg-blue-900/90 text-blue-200 border border-blue-600 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                Pesquisa por IA em Catálogos Online
+              </span>
+            )}
+            <span className="text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              Catálogos Oficiais Atualizados
+            </span>
           </div>
           <div className="text-base font-bold flex items-center gap-2 text-white">
             <span className="text-blue-400">{result.query.part}</span>
@@ -163,6 +190,54 @@ export const ResultView: React.FC<ResultViewProps> = ({
       ) : (
         /* Structured Senior Clerk Cards Layout */
         <div className="space-y-4">
+          {/* PAINEL DE CATÁLOGOS ONLINE CONSULTADOS PELA IA */}
+          <div
+            id="panel-online-catalogs"
+            className="bg-linear-to-r from-blue-900 to-slate-900 text-white rounded-xl p-4 sm:p-5 shadow-sm border border-blue-800/80"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-800/60">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/40 text-cyan-300 flex items-center justify-center font-bold text-sm shrink-0">
+                  <Globe className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-bold text-white tracking-wide">
+                      Catálogos Online Oficiais dos Fabricantes
+                    </h3>
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700/60 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                      Consulta por IA Ativa
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    A IA consulta as bases eletrônicas atualizadas dos fabricantes. Clique no catálogo para abrir a ficha técnica oficial do fabricante:
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Manufacturer Portal Buttons */}
+            {result.officialCatalogs && result.officialCatalogs.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {result.officialCatalogs.map((portal, pIdx) => (
+                  <a
+                    key={pIdx}
+                    href={portal.searchUrl || portal.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/90 hover:bg-blue-600 border border-slate-700 hover:border-blue-400 rounded-lg text-xs font-semibold text-slate-100 hover:text-white transition-all group shadow-2xs"
+                    title={`Abrir consulta online oficial no ${portal.name}`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:bg-white shrink-0" />
+                    <span>{portal.name}</span>
+                    <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-white shrink-0" />
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* 1. PERGUNTAS DE CONFIRMAÇÃO (TRIAGEM) */}
           {result.confirmationQuestions && result.confirmationQuestions.length > 0 && (
             <div
