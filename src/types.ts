@@ -1,0 +1,62 @@
+export interface QueryParams {
+  vehicle: string;
+  year: string;
+  part: string;
+  engine?: string;
+  notes?: string;
+  answers?: Record<string, string>;
+}
+
+export interface ParsedCodeItem {
+  brand: string;
+  code: string;
+  category: 'original' | 'aftermarket' | 'warning';
+  notes?: string;
+  catalogUrl?: string;
+  catalogName?: string;
+}
+
+export interface VerifiedSource {
+  title: string;
+  uri: string;
+}
+
+export interface OfficialCatalogPortal {
+  brand: string;
+  name: string;
+  url: string;
+  searchUrl?: string;
+  badge: string;
+}
+
+export interface QueryResult {
+  id: string;
+  timestamp: number;
+  query: QueryParams;
+  rawMarkdown: string;
+  hasUnresolvedQuestions: boolean;
+  confirmationQuestions: string[];
+  codes: ParsedCodeItem[];
+  technicalAlerts: string[];
+  relatedParts: {
+    similars: string[];
+    complementary: string[];
+  };
+  visualInspection: {
+    searchTerm: string;
+    description: string;
+  };
+  suppliersRioClaro: string[];
+  verifiedSources?: VerifiedSource[];
+  officialCatalogs?: OfficialCatalogPortal[];
+  usedFallback?: boolean;
+}
+
+export interface VehiclePreset {
+  title: string;
+  vehicle: string;
+  year: string;
+  part: string;
+  engine?: string;
+  notes?: string;
+}
