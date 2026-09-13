@@ -176,13 +176,10 @@ export default function App() {
       <Header
         onNewQuery={handleNewQuery}
         onOpenBrands={() => setIsBrandsModalOpen(true)}
-        onOpenSuppliers={() => setIsSuppliersModalOpen(true)}
-        onOpenHistory={() => setIsHistoryDrawerOpen(true)}
-        historyCount={history.length}
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Error Alert if any */}
         {error && (
           <div className="bg-rose-50 border border-rose-300 rounded-xl p-4 flex items-start gap-3 shadow-xs">
@@ -296,7 +293,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 text-xs py-4 border-t border-slate-800 mt-auto print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-200">AutoPeças Balcão Pro</span>
             <span>•</span>

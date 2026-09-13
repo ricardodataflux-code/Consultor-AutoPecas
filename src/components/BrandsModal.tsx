@@ -120,7 +120,18 @@ export const BrandsModal: React.FC<BrandsModalProps> = ({
 
         {/* Footer */}
         <div className="p-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500 flex justify-between items-center">
-          <span>Total: {filteredBrands.length} marcas catalogadas</span>
+          <div className="flex items-center gap-3">
+            <span>Total: {filteredBrands.length} marcas catalogadas</span>
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold border border-blue-200 transition-colors"
+              onClick={() => {
+                alert('Funcionalidade de adicionar novo catálogo será implementada em breve.');
+              }}
+            >
+              + Adicionar Catálogo
+            </button>
+          </div>
           <button
             type="button"
             onClick={onClose}

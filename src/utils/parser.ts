@@ -38,7 +38,7 @@ export function parseSeniorClerkMarkdown(
     if (/^1\.\s+PERGUNTAS DE CONFIRMAÇÃO/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
       for (const line of lines) {
-        const clean = line.replace(/^[-*•\d.]\s*/, '').trim();
+        const clean = line.replace(/^\s*[-*•\d.]\s*/, '').trim();
         if (
           clean &&
           !clean.toLowerCase().includes('aplicação identificada') &&
@@ -56,19 +56,28 @@ export function parseSeniorClerkMarkdown(
     else if (/^2\.\s+CÓDIGOS DE REFERÊNCIA/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
       for (const line of lines) {
-        const clean = line.replace(/^[-*•]\s*/, '').trim();
+        const clean = line.replace(/^\s*[-*•]\s*/, '').trim();
         if (!clean) continue;
 
         const colonMatch = clean.match(/^([^:]+):\s*(.+)$/);
         if (colonMatch) {
           const brand = colonMatch[1].replace(/\*\*/g, '').trim();
-          const codeVal = colonMatch[2].replace(/\*\*/g, '').trim();
+          let codeVal = colonMatch[2].replace(/\*\*/g, '').trim();
+          let notes: string | undefined;
+          
+          // Extract notes in parentheses or after a dash for descriptions
+          const noteMatch = codeVal.match(/^(.*?)(?:\s*\(([^)]+)\)|\s+-\s+(.+))$/);
+          if (noteMatch) {
+            codeVal = noteMatch[1].trim();
+            notes = (noteMatch[2] || noteMatch[3]).trim();
+          }
 
           let category: 'original' | 'aftermarket' | 'warning' = 'aftermarket';
           if (
             brand.toLowerCase().includes('original') ||
             brand.toLowerCase().includes('montadora') ||
-            brand.toLowerCase().includes('oem')
+            brand.toLowerCase().includes('oem') ||
+            (notes && (notes.toLowerCase().includes('original') || notes.toLowerCase().includes('oem')))
           ) {
             category = 'original';
           } else if (
@@ -90,6 +99,7 @@ export function parseSeniorClerkMarkdown(
           result.codes.push({
             brand,
             code: codeVal,
+            notes,
             category,
             catalogUrl,
             catalogName: portal?.name || `Catálogo ${brand}`,
@@ -110,7 +120,7 @@ export function parseSeniorClerkMarkdown(
     else if (/^3\.\s+ALERTAS TÉCNICOS/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
       for (const line of lines) {
-        const clean = line.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim();
+        const clean = line.replace(/^\s*[-*•]\s*/, '').replace(/\*\*/g, '').trim();
         if (clean) {
           result.technicalAlerts.push(clean);
         }
@@ -130,7 +140,7 @@ export function parseSeniorClerkMarkdown(
           subMode = 'complementary';
         }
 
-        const bullet = clean.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim();
+        const bullet = clean.replace(/^\s*[-*•]\s*/, '').replace(/\*\*/g, '').trim();
         if (bullet && !/^#+\s/.test(bullet)) {
           if (subMode === 'similars') {
             result.relatedParts.similars.push(bullet);
@@ -145,7 +155,7 @@ export function parseSeniorClerkMarkdown(
     else if (/^5\.\s+IMAGEM DE REFERÊNCIA/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
       for (const line of lines) {
-        const clean = line.replace(/^[-*•]\s*/, '').trim();
+        const clean = line.replace(/^\s*[-*•]\s*/, '').trim();
         if (!clean) continue;
 
         if (
@@ -172,7 +182,7 @@ export function parseSeniorClerkMarkdown(
     else if (/^6\.\s+ONDE ENCONTRAR/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
       for (const line of lines) {
-        const clean = line.replace(/^[-*•]\s*/, '').replace(/\*\*/g, '').trim();
+        const clean = line.replace(/^\s*[-*•]\s*/, '').replace(/\*\*/g, '').trim();
         if (clean) {
           result.suppliersRioClaro.push(clean);
         }

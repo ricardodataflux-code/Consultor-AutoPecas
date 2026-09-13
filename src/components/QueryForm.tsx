@@ -51,6 +51,13 @@ export const QueryForm: React.FC<QueryFormProps> = ({
       setYear(initialParams.year || '');
       setEngine(initialParams.engine || '');
       setNotes(initialParams.notes || '');
+    } else {
+      setPart('');
+      setVehicle('');
+      setYear('');
+      setEngine('');
+      setNotes('');
+      setQuickPhrase('');
     }
   }, [initialParams]);
 

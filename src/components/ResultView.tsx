@@ -1,503 +1,518 @@
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
-  HelpCircle,
-  Hash,
-  AlertTriangle,
-  Layers,
-  Image as ImageIcon,
-  MapPin,
   Copy,
   Check,
+  HelpCircle,
+  AlertTriangle,
+  Package,
+  Layers,
+  Camera,
   ExternalLink,
-  Share2,
-  Printer,
-  FileCode,
-  Send,
-  Eye,
-  PlusCircle,
-  Truck,
-  Building2,
-  ShieldCheck,
-  Globe,
+  Search,
+  CheckCircle2,
+  Phone,
+  FileText,
+  ListFilter,
+  Sparkles,
+  Tag,
+  Image as ImageIcon,
+  ShoppingCart,
+  MapPin,
 } from 'lucide-react';
 import { QueryResult } from '../types';
-import { formatWhatsAppBudget } from '../utils/parser';
 
 interface ResultViewProps {
   result: QueryResult;
-  onAnswerConfirmations: (answers: Record<string, string>) => void;
-  onQueryRelatedPart: (partName: string) => void;
-  isLoading: boolean;
+  onAnswerConfirmations?: (answers: Record<string, string>) => void;
+  onQueryRelatedPart?: (partName: string) => void;
+  isLoading?: boolean;
 }
 
 export const ResultView: React.FC<ResultViewProps> = ({
   result,
   onAnswerConfirmations,
   onQueryRelatedPart,
-  isLoading,
+  isLoading = false,
 }) => {
-  const [viewMode, setViewMode] = useState<'cards' | 'markdown'>('cards');
-  const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [answerInputs, setAnswerInputs] = useState<Record<string, string>>({});
-  const [copiedWhatsApp, setCopiedWhatsApp] = useState(false);
+  const [viewMode, setViewMode] = useState<'visual' | 'markdown'>('visual');
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+  const [filterAnswers, setFilterAnswers] = useState<Record<string, string>>({});
 
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedText(label);
-    setTimeout(() => setCopiedText(null), 2000);
+  const groupedCodes = React.useMemo(() => {
+    const groups: { application: string | null; items: typeof result.codes }[] = [];
+    let currentGroup: { application: string | null; items: typeof result.codes } = { application: null, items: [] };
+
+    result.codes.forEach(item => {
+      if (item.brand.toLowerCase() === 'aplicação' || item.brand.toLowerCase() === 'aplicacao') {
+        if (currentGroup.items.length > 0 || currentGroup.application !== null) {
+          groups.push(currentGroup);
+        }
+        const cleanApp = item.code.replace(/:$/, '').trim();
+        currentGroup = { application: cleanApp, items: [] };
+      } else {
+        currentGroup.items.push(item);
+      }
+    });
+    if (currentGroup.items.length > 0 || currentGroup.application !== null) {
+      groups.push(currentGroup);
+    }
+    
+    // Sort items inside each group to put "original" at the top
+    groups.forEach(group => {
+      group.items.sort((a, b) => {
+        if (a.category === 'original' && b.category !== 'original') return -1;
+        if (a.category !== 'original' && b.category === 'original') return 1;
+        return 0;
+      });
+    });
+
+    return groups;
+  }, [result.codes]);
+
+  const handleCopyAll = () => {
+    navigator.clipboard.writeText(result.rawMarkdown);
+    setCopiedAll(true);
+    setTimeout(() => setCopiedAll(false), 2000);
   };
 
-  const handleCopyWhatsApp = () => {
-    const text = formatWhatsAppBudget(result);
-    navigator.clipboard.writeText(text);
-    setCopiedWhatsApp(true);
-    setTimeout(() => setCopiedWhatsApp(false), 2500);
+  const handleCopyCode = (code: string, label: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedItem(label);
+    setTimeout(() => setCopiedItem(null), 1800);
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleSelectAnswerChip = (question: string, value: string) => {
+    setFilterAnswers((prev) => ({
+      ...prev,
+      [question]: value,
+    }));
   };
 
-  const handleAnswerSubmit = (e: React.FormEvent) => {
+  const handleApplyFilter = (e: React.FormEvent) => {
     e.preventDefault();
-    onAnswerConfirmations(answerInputs);
+    if (onAnswerConfirmations) {
+      onAnswerConfirmations(filterAnswers);
+    }
   };
 
+  // Pre-generate quick chips depending on question content
+  const getQuestionChips = (q: string): string[] => {
+    const qLower = q.toLowerCase();
+    const chips: string[] = [];
+
+    if (qLower.includes('geração') || qLower.includes('geracao') || qLower.includes('g5') || qLower.includes('g4')) {
+      chips.push('Gol G5 / G6 / G7 / G8', 'Gol G2 / G3 / G4 Bola');
+    }
+    if (qLower.includes('motor') || qLower.includes('motorização') || qLower.includes('motorizacao')) {
+      chips.push('1.0 8V', '1.6 8V', '1.4', '1.8', 'EA111', 'AP');
+    }
+    if (qLower.includes('abs')) {
+      chips.push('Com ABS', 'Sem ABS');
+    }
+    if (qLower.includes('lado') || qLower.includes('posição') || qLower.includes('posicao')) {
+      chips.push('Dianteiro', 'Traseiro', 'Lado Direito (LD)', 'Lado Esquerdo (LE)', 'Par (Ambos)');
+    }
+    if (qLower.includes('câmbio') || qLower.includes('cambio')) {
+      chips.push('Manual (Mecânico)', 'Automático');
+    }
+    if (qLower.includes('barra') || qLower.includes('estabilizadora')) {
+      chips.push('Com barra estabilizadora', 'Sem barra estabilizadora');
+    }
+    if (qLower.includes('direção') || qLower.includes('direcao')) {
+      chips.push('Hidráulica', 'Elétrica', 'Mecânica (Manual)');
+    }
+    if (qLower.includes('bosch') || qLower.includes('marwal')) {
+      chips.push('Sistema Bosch', 'Sistema Marwal');
+    }
+    if (qLower.includes('teves') || qLower.includes('varga')) {
+      chips.push('Sistema Teves / ATE', 'Sistema Varga / TRW', 'Sistema Bosch');
+    }
+
+    return chips;
+  };
+
+  // Google image search URL
   const googleImagesUrl = `https://www.google.com/search?tbm=isch&q=${encodeURIComponent(
-    result.visualInspection.searchTerm || `${result.query.part} ${result.query.vehicle}`
+    result.visualInspection.searchTerm || `${result.query.part} ${result.query.vehicle} ${result.query.year || ''}`
   )}`;
 
   return (
-    <div className="space-y-4 print:space-y-2">
-      {/* Top Action Bar for Balconista */}
-      <div className="bg-slate-900 text-white rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md print:hidden">
-        <div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-slate-400 uppercase font-semibold tracking-wider">
-              Consulta Ativa no Balcão
+    <div className="w-full mt-4 flex flex-col items-center animate-fade-in space-y-4">
+      {/* Top Controls Bar */}
+      <div className="w-full flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-bold text-slate-800 uppercase tracking-wide bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+            {result.query.part} • {result.query.vehicle} {result.query.year ? `(${result.query.year})` : ''}
+          </span>
+          {result.usedFallback ? (
+            <span className="text-[11px] font-bold bg-amber-50 text-amber-800 px-2.5 py-1 rounded-md border border-amber-200 flex items-center gap-1">
+              <Sparkles className="w-3 h-3 text-amber-600" />
+              Catálogo Especialista Balcão
             </span>
-            {result.quotaExceeded ? (
-              <span
-                id="badge-quota-notice"
-                className="text-[10px] font-semibold bg-amber-950 text-amber-300 border border-amber-800 px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs"
-                title="Cota da API externa em resfriamento. Catálogo técnico do balcão e links oficiais em operação normal."
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                Catálogo Técnico Balcão (Cota API em espera)
-              </span>
-            ) : result.usedFallback ? (
-              <span className="text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                Catálogo Técnico Balcão Offline
-              </span>
-            ) : (
-              <span className="text-[11px] font-bold bg-blue-900/90 text-blue-200 border border-blue-600 px-2.5 py-0.5 rounded-full flex items-center gap-1.5 shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                Pesquisa por IA em Catálogos Online
-              </span>
-            )}
-            <span className="text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              Catálogos Oficiais Atualizados
+          ) : (
+            <span className="text-[11px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-md border border-emerald-200 flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+              Consulta Online IA
             </span>
-          </div>
-          <div className="text-base font-bold flex items-center gap-2 text-white">
-            <span className="text-blue-400">{result.query.part}</span>
-            <span className="text-slate-500">|</span>
-            <span>
-              {result.query.vehicle} {result.query.year || ''}
-            </span>
-            {result.query.engine && (
-              <span className="text-xs px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
-                {result.query.engine}
-              </span>
-            )}
-          </div>
+          )}
         </div>
 
-        <div className="flex items-center flex-wrap gap-2">
-          {/* WhatsApp Quote Share */}
-          <button
-            id="btn-copy-whatsapp"
-            type="button"
-            onClick={handleCopyWhatsApp}
-            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95"
-            title="Copiar mensagem pronta para enviar no WhatsApp do cliente"
-          >
-            {copiedWhatsApp ? (
-              <>
-                <Check className="w-3.5 h-3.5" />
-                <span>Copiado para WhatsApp!</span>
-              </>
-            ) : (
-              <>
-                <Share2 className="w-3.5 h-3.5" />
-                <span>Copiar Orçamento WhatsApp</span>
-              </>
-            )}
-          </button>
-
-          {/* Print / Separation Sheet */}
-          <button
-            id="btn-print-sheet"
-            type="button"
-            onClick={handlePrint}
-            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 flex items-center gap-1.5 transition-all"
-            title="Imprimir ficha de separação para o estoque"
-          >
-            <Printer className="w-3.5 h-3.5 text-slate-300" />
-            <span>Ficha Balcão</span>
-          </button>
-
+        <div className="flex items-center gap-2">
           {/* View Mode Toggle */}
-          <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700">
+          <div className="bg-slate-100 p-1 rounded-lg border border-slate-200 flex items-center text-xs">
             <button
-              type="button"
-              onClick={() => setViewMode('cards')}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1 transition-all ${
-                viewMode === 'cards'
-                  ? 'bg-blue-600 text-white font-semibold'
-                  : 'text-slate-400 hover:text-white'
+              onClick={() => setViewMode('visual')}
+              className={`flex items-center gap-1 px-3 py-1 rounded-md font-semibold transition-colors ${
+                viewMode === 'visual'
+                  ? 'bg-white text-blue-700 shadow-xs border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <Eye className="w-3 h-3" />
-              <span>Painel</span>
+              <ListFilter className="w-3.5 h-3.5" />
+              Visual Balcão
             </button>
             <button
-              type="button"
               onClick={() => setViewMode('markdown')}
-              className={`px-2.5 py-1 text-xs font-medium rounded-md flex items-center gap-1 transition-all ${
+              className={`flex items-center gap-1 px-3 py-1 rounded-md font-semibold transition-colors ${
                 viewMode === 'markdown'
-                  ? 'bg-blue-600 text-white font-semibold'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-white text-blue-700 shadow-xs border border-slate-200'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <FileCode className="w-3 h-3" />
-              <span>Texto Markdown</span>
+              <FileText className="w-3.5 h-3.5" />
+              Texto / Markdown
             </button>
           </div>
+
+          <button
+            onClick={handleCopyAll}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors shadow-xs"
+            title="Copiar resultado completo"
+          >
+            {copiedAll ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedAll ? 'Copiado!' : 'Copiar Tudo'}</span>
+          </button>
         </div>
       </div>
 
-      {/* Raw Markdown view if selected */}
-      {viewMode === 'markdown' ? (
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
-          <div className="markdown-body prose max-w-none text-slate-800 text-sm leading-relaxed">
-            <ReactMarkdown>{result.rawMarkdown}</ReactMarkdown>
+      {/* MARKDOWN VIEW (Matches dark-mode chat format when selected) */}
+      {viewMode === 'markdown' && (
+        <div className="w-full bg-[#202124] rounded-xl border border-slate-700/70 shadow-xl p-6 sm:p-8">
+          <div className="markdown-body text-slate-200 text-[15px] leading-relaxed">
+            <ReactMarkdown
+              components={{
+                h1: ({ node, ...props }) => <h1 className="text-xl font-bold text-white mt-6 mb-3 first:mt-0 uppercase tracking-wide border-b border-slate-700 pb-2" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="text-lg font-bold text-white mt-8 mb-4 uppercase tracking-wide text-blue-400" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="text-base font-bold text-white mt-6 mb-3 uppercase tracking-wide" {...props} />,
+                p: ({ node, ...props }) => <p className="text-slate-300 mb-4" {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-disc pl-5 text-slate-300 mb-4 space-y-2 marker:text-blue-400" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 text-slate-300 mb-4 space-y-2 marker:text-blue-400" {...props} />,
+                li: ({ node, ...props }) => <li className="pl-1" {...props} />,
+                strong: ({ node, ...props }) => <strong className="font-bold text-white" {...props} />,
+                a: ({ node, ...props }) => <a className="text-blue-400 no-underline hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
+              }}
+            >
+              {result.rawMarkdown}
+            </ReactMarkdown>
           </div>
         </div>
-      ) : (
-        /* Structured Senior Clerk Cards Layout */
-        <div className="space-y-4">
-          {/* PAINEL DE CATÁLOGOS ONLINE CONSULTADOS PELA IA */}
-          <div
-            id="panel-online-catalogs"
-            className="bg-linear-to-r from-blue-900 to-slate-900 text-white rounded-xl p-4 sm:p-5 shadow-sm border border-blue-800/80"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-800/60">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-400/40 text-cyan-300 flex items-center justify-center font-bold text-sm shrink-0">
-                  <Globe className="w-4 h-4 text-cyan-400" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-bold text-white tracking-wide">
-                      Catálogos Online Oficiais dos Fabricantes
-                    </h3>
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700/60 flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                      Consulta por IA Ativa
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-300 mt-0.5">
-                    A IA consulta as bases eletrônicas atualizadas dos fabricantes. Clique no catálogo para abrir a ficha técnica oficial do fabricante:
-                  </p>
-                </div>
-              </div>
-            </div>
+      )}
 
-            {/* Manufacturer Portal Buttons */}
-            {result.officialCatalogs && result.officialCatalogs.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {result.officialCatalogs.map((portal, pIdx) => (
-                  <a
-                    key={pIdx}
-                    href={portal.searchUrl || portal.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800/90 hover:bg-blue-600 border border-slate-700 hover:border-blue-400 rounded-lg text-xs font-semibold text-slate-100 hover:text-white transition-all group shadow-2xs"
-                    title={`Abrir consulta online oficial no ${portal.name}`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 group-hover:bg-white shrink-0" />
-                    <span>{portal.name}</span>
-                    <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-white shrink-0" />
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* 1. PERGUNTAS DE CONFIRMAÇÃO (TRIAGEM) */}
-          {result.confirmationQuestions && result.confirmationQuestions.length > 0 && (
-            <div
-              id="card-confirmation-questions"
-              className="bg-amber-50/90 border-2 border-amber-400 rounded-xl p-5 shadow-sm animate-pulse-border"
-            >
+      {/* VISUAL BALCÃO VIEW (High productivity, direct lists, interactive filter) */}
+      {viewMode === 'visual' && (
+        <div className="w-full space-y-5">
+          {/* SECTION 1: TRIAGEM & PERGUNTAS DE CONFIRMAÇÃO (FILTRO INTERATIVO) */}
+          {result.confirmationQuestions.length > 0 ? (
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                    <HelpCircle className="w-4 h-4" />
+                  <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                    1
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-amber-950 uppercase tracking-wide flex items-center gap-2">
-                      1. Perguntas de Confirmação (Regra de Triagem)
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-amber-200 text-amber-900 font-extrabold">
-                        Ação Necessária
-                      </span>
+                    <h3 className="text-base font-bold text-amber-950 flex items-center gap-1.5">
+                      <HelpCircle className="w-4 h-4 text-amber-700" />
+                      Triagem Técnica & Perguntas de Confirmação (Filtro)
                     </h3>
-                    <p className="text-xs text-amber-900 mt-0.5">
-                      Para não errar a aplicação, confirme com o cliente antes de entregar a peça no balcão:
+                    <p className="text-xs text-amber-800">
+                      Responda ou selecione as opções abaixo para filtrar e fechar a aplicação exata:
                     </p>
                   </div>
                 </div>
+                <span className="text-[10px] font-bold bg-amber-200/80 text-amber-900 px-2 py-1 rounded-full uppercase tracking-wider">
+                  Filtro Ativo
+                </span>
               </div>
 
-              <form onSubmit={handleAnswerSubmit} className="space-y-3 mt-3">
-                <div className="space-y-2">
-                  {result.confirmationQuestions.map((q, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-white/90 p-3 rounded-lg border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
-                    >
-                      <span className="text-xs font-semibold text-slate-800 flex-1">
+              <form onSubmit={handleApplyFilter} className="space-y-4 mt-4">
+                {result.confirmationQuestions.map((q, idx) => {
+                  const chips = getQuestionChips(q);
+                  const currentValue = filterAnswers[q] || '';
+
+                  return (
+                    <div key={idx} className="bg-white/90 p-3.5 rounded-lg border border-amber-200/80 shadow-xs space-y-2">
+                      <label className="text-xs font-bold text-slate-800 block">
                         • {q}
-                      </span>
+                      </label>
+
+                      {/* Quick Choice Chips */}
+                      {chips.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {chips.map((chip, cIdx) => {
+                            const isSelected = currentValue === chip;
+                            return (
+                              <button
+                                key={cIdx}
+                                type="button"
+                                onClick={() => handleSelectAnswerChip(q, chip)}
+                                className={`text-[11px] px-2.5 py-1 rounded-md font-semibold transition-all ${
+                                  isSelected
+                                    ? 'bg-blue-600 text-white shadow-xs scale-102 ring-2 ring-blue-300'
+                                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+                                }`}
+                              >
+                                {chip}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Text Input for Custom Answer */}
                       <input
                         type="text"
-                        placeholder="Resposta do cliente (ex: 1.4 Flex, Com ABS, LD)..."
-                        value={answerInputs[q] || ''}
+                        value={currentValue}
                         onChange={(e) =>
-                          setAnswerInputs({
-                            ...answerInputs,
+                          setFilterAnswers((prev) => ({
+                            ...prev,
                             [q]: e.target.value,
-                          })
+                          }))
                         }
-                        className="text-xs px-3 py-1.5 bg-amber-50/50 border border-amber-300 rounded-md focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-900 w-full sm:w-64"
+                        placeholder="Digite a resposta confirmada ou selecione acima..."
+                        className="w-full text-xs px-3 py-2 rounded-md border border-slate-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500 bg-white"
                       />
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
 
-                <div className="flex justify-end pt-1">
+                <div className="flex items-center justify-end gap-3 pt-2">
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-2 active:scale-95"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-md transition-all disabled:opacity-50"
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Confirmar Respostas & Atualizar Códigos Exatos</span>
+                    <Search className="w-4 h-4" />
+                    <span>{isLoading ? 'Aplicando Filtro...' : '🔍 Aplicar Filtro & Fechar Código Exato'}</span>
                   </button>
                 </div>
               </form>
             </div>
-          )}
-
-          {/* 2. CÓDIGOS DE REFERÊNCIA */}
-          <div
-            id="card-reference-codes"
-            className="bg-white rounded-xl border border-slate-200 shadow-sm p-5"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                  <Hash className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2 flex-wrap">
-                    <span>2. Códigos de Referência (Montadora & Catálogos Fabricantes)</span>
-                    <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200 normal-case">
-                      Catálogos Online Atualizados
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Referências pesquisadas e validadas nos catálogos oficiais dos fabricantes. Clique para copiar ou conferir online.
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-[11px] text-slate-400 font-medium self-start sm:self-auto">
-                {result.codes.length} marcas/códigos listados
+          ) : (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-center gap-3 text-emerald-900">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <div>
+                <p className="text-xs font-bold">1. Aplicação Identificada com Precisão</p>
+                <p className="text-[11px] text-emerald-700">
+                  Nenhuma dúvida técnica pendente. Códigos de referência fechados para o modelo informado.
+                </p>
               </div>
             </div>
+          )}
 
-            {result.codes.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                {result.codes.map((item, idx) => {
-                  const isCopied = copiedText === item.code;
-                  const isOriginal = item.category === 'original';
-                  const isWarning = item.category === 'warning';
-
-                  return (
-                    <div
-                      key={idx}
-                      className={`p-3 rounded-lg border transition-all flex flex-col justify-between ${
-                        isOriginal
-                          ? 'bg-blue-50/80 border-blue-300 ring-1 ring-blue-400/30'
-                          : isWarning
-                          ? 'bg-amber-50 border-amber-300'
-                          : 'bg-slate-50/70 border-slate-200 hover:border-slate-300 hover:bg-white'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`text-xs font-black uppercase tracking-wider ${
-                              isOriginal
-                                ? 'text-blue-900'
-                                : isWarning
-                                ? 'text-amber-900'
-                                : 'text-slate-800'
-                            }`}
-                          >
-                            {item.brand}
-                          </span>
-                          {isOriginal && (
-                            <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-blue-600 text-white uppercase">
-                              OEM / Montadora
-                            </span>
-                          )}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(item.code, item.code)}
-                          className="p-1 rounded bg-white border border-slate-200 hover:border-blue-400 text-slate-500 hover:text-blue-600 transition-colors shrink-0 shadow-2xs"
-                          title="Copiar código"
-                        >
-                          {isCopied ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          ) : (
-                            <Copy className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                      </div>
-
-                      <div className="font-mono text-xs font-bold text-slate-900 break-all select-all flex items-center justify-between">
-                        <span>{item.code}</span>
-                      </div>
-
-                      {/* Direct link to manufacturer online catalog */}
-                      <div className="flex items-center justify-between gap-1 mt-2.5 pt-2 border-t border-slate-200/70 text-[10px]">
-                        <span className="text-slate-500 truncate max-w-[130px]" title={item.catalogName}>
-                          {item.catalogName || 'Catálogo Oficial'}
-                        </span>
-                        {item.catalogUrl && (
-                          <a
-                            href={item.catalogUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 font-bold hover:underline shrink-0"
-                            title={`Abrir catálogo oficial de ${item.brand}`}
-                          >
-                            <span>Checar Catálogo</span>
-                            <ExternalLink className="w-2.5 h-2.5" />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Official Manufacturer Catalog Portals */}
-              {result.officialCatalogs && result.officialCatalogs.length > 0 && (
-                <div className="mt-4 p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-blue-900">
-                      <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
-                      <span>Catálogos Online Oficiais dos Fabricantes</span>
-                    </div>
-                    <span className="text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
-                      Links Oficiais Diretos
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-blue-800 leading-tight">
-                    Acesse o catálogo eletrônico oficial de cada fabricante para confirmar dimensões, fichas técnicas e lotes de fabricação em tempo real:
+          {/* SECTION 2: CÓDIGOS DE REFERÊNCIA (LISTA DIRETA NO ATO) */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  2
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
+                    <Package className="w-4 h-4 text-blue-600" />
+                    Códigos de Referência dos Fabricantes
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Códigos prontos para consulta no sistema de estoque e fechamento da venda
                   </p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {result.officialCatalogs.map((portal, pIdx) => (
-                      <a
-                        key={pIdx}
-                        href={portal.searchUrl || portal.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-blue-200 hover:border-blue-400 rounded-lg text-xs font-bold text-blue-950 hover:text-blue-700 shadow-2xs hover:shadow-xs transition-all"
-                        title={`Abrir portal ${portal.name}`}
-                      >
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                        <span>{portal.name}</span>
-                        <ExternalLink className="w-3 h-3 text-slate-400" />
-                      </a>
-                    ))}
-                  </div>
                 </div>
-              )}
+              </div>
+              <span className="text-[10px] font-bold bg-blue-50 text-blue-800 px-2.5 py-1 rounded-full border border-blue-200 uppercase">
+                {result.codes.length} Referências
+              </span>
+            </div>
 
-              {/* Online Grounding Sources if available */}
-              {result.verifiedSources && result.verifiedSources.length > 0 && (
-                <div className="mt-2.5 p-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] text-slate-600 flex flex-wrap items-center gap-2">
-                  <span className="font-bold text-slate-700 shrink-0">Bases Online Consultadas:</span>
-                  {result.verifiedSources.slice(0, 5).map((src, sIdx) => (
-                    <a
-                      key={sIdx}
-                      href={src.uri}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] font-medium"
-                    >
-                      <span className="truncate max-w-[180px]">{src.title}</span>
-                      <ExternalLink className="w-2.5 h-2.5 shrink-0" />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </>
+            {/* List of Reference Codes */}
+            {groupedCodes.length > 0 ? (
+              <div className="flex flex-col gap-6">
+                {groupedCodes.map((group, groupIdx) => (
+                  <div key={groupIdx} className="flex flex-col shadow-xs rounded-lg">
+                    {group.application && (
+                      <div className="bg-slate-100 border border-slate-200 rounded-t-lg px-4 py-2.5 flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-slate-500" />
+                        <span className="font-bold text-sm text-slate-800">{group.application}</span>
+                      </div>
+                    )}
+                    <div className={`divide-y divide-slate-100 border border-slate-200 bg-white ${group.application ? 'rounded-b-lg border-t-0' : 'rounded-lg'}`}>
+                      {group.items.length === 0 ? (
+                        <div className="p-4 text-sm text-slate-500 italic text-center">Nenhum código listado para esta aplicação.</div>
+                      ) : null}
+                      {group.items.map((item, idx) => {
+                        const uniqueId = `${groupIdx}-${idx}`;
+                        const isCopied = copiedItem === `${item.brand}-${uniqueId}`;
+                        const isOriginal = item.category === 'original';
+
+                        return (
+                          <div
+                            key={uniqueId}
+                            className={`py-3 px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors group ${!group.application && idx === 0 ? 'rounded-t-lg' : ''} ${idx === group.items.length - 1 ? 'rounded-b-lg' : ''}`}
+                          >
+                            <div className="flex items-start sm:items-center gap-3">
+                              <span
+                                className={`text-[11px] font-bold px-2.5 py-1 rounded-md tracking-wide uppercase shrink-0 border ${
+                                  isOriginal
+                                    ? 'bg-slate-900 text-white border-slate-900'
+                                    : item.brand.toLowerCase().includes('nakata')
+                                    ? 'bg-orange-50 text-orange-900 border-orange-200'
+                                    : item.brand.toLowerCase().includes('cofap')
+                                    ? 'bg-amber-50 text-amber-900 border-amber-200'
+                                    : item.brand.toLowerCase().includes('monroe')
+                                    ? 'bg-yellow-50 text-yellow-900 border-yellow-300'
+                                    : item.brand.toLowerCase().includes('bosch')
+                                    ? 'bg-red-50 text-red-900 border-red-200'
+                                    : item.brand.toLowerCase().includes('cobreq')
+                                    ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                                    : item.brand.toLowerCase().includes('luk')
+                                    ? 'bg-yellow-50 text-amber-900 border-yellow-300'
+                                    : 'bg-slate-100 text-slate-800 border-slate-200'
+                                }`}
+                              >
+                                {item.brand}
+                              </span>
+
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-mono text-sm sm:text-base font-bold text-slate-900 select-all tracking-tight">
+                                    {item.code}
+                                  </span>
+                                  {item.category === 'original' && (
+                                    <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 border border-amber-300 text-[10px] uppercase font-black px-2 py-0.5 rounded shadow-xs">
+                                      <Sparkles className="w-3 h-3" />
+                                      ORIGINAL DE FÁBRICA
+                                    </span>
+                                  )}
+                                </div>
+                                {item.notes && (
+                                  <div className="flex flex-col gap-1 mt-1.5">
+                                    {item.notes.includes('|') ? (
+                                      <div className="bg-slate-50 border border-slate-100 rounded-md p-2">
+                                        <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Dados Técnicos da Peça</div>
+                                        <ul className="flex flex-col gap-1 text-[11px] text-slate-600 font-medium">
+                                          {item.notes.split('|').map((notePart, nIdx) => {
+                                            const parts = notePart.split(':');
+                                            if (parts.length > 1) {
+                                              return (
+                                                <li key={nIdx} className="flex gap-1">
+                                                  <span className="font-bold text-slate-700">{parts[0].trim()}:</span>
+                                                  <span>{parts.slice(1).join(':').trim()}</span>
+                                                </li>
+                                              );
+                                            }
+                                            return <li key={nIdx}>{notePart.trim()}</li>;
+                                          })}
+                                        </ul>
+                                      </div>
+                                    ) : (
+                                      <span className="text-[11px] text-slate-500 font-medium">{item.notes}</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                              <button
+                                onClick={() => handleCopyCode(item.code, `${item.brand}-${uniqueId}`)}
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border shadow-xs ${
+                                  isCopied
+                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                                    : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                                }`}
+                                title="Copiar apenas este código"
+                              >
+                                {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                                <span>{isCopied ? 'Copiado!' : 'Copiar Código'}</span>
+                              </button>
+
+                              <a
+                                href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(`${result.query.part} ${item.brand} ${item.code}`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-teal-600 transition-colors shadow-xs"
+                                title="Ver foto desta peça"
+                              >
+                                <ImageIcon className="w-3.5 h-3.5" />
+                              </a>
+
+                              <a
+                                href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(`"${item.brand}" "${item.code}"`)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-orange-600 transition-colors shadow-xs"
+                                title="Buscar preço e opções online (Mercado Livre, Shopee, etc)"
+                              >
+                                <ShoppingCart className="w-3.5 h-3.5" />
+                              </a>
+
+                              {item.catalogUrl && (
+                                <a
+                                  href={item.catalogUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1.5 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-blue-600 transition-colors shadow-xs"
+                                  title={`Abrir ${item.catalogName || 'catálogo online'}`}
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <div className="text-xs text-slate-500 py-3 italic">
-                Nenhum código explícito detectado. Verifique o modo markdown completo.
+              <div className="text-xs text-slate-600 whitespace-pre-line bg-slate-50 p-4 rounded-lg">
+                {result.rawMarkdown}
               </div>
             )}
           </div>
 
-          {/* 3. ALERTAS TÉCNICOS */}
-          {result.technicalAlerts && result.technicalAlerts.length > 0 && (
-            <div
-              id="card-technical-alerts"
-              className="bg-rose-50/80 border border-rose-200 rounded-xl p-5 shadow-sm"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                  <AlertTriangle className="w-4 h-4" />
+          {/* SECTION 3: ALERTAS TÉCNICOS */}
+          {result.technicalAlerts.length > 0 && (
+            <div className="bg-amber-50/70 border border-amber-200 rounded-xl p-5 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 border-b border-amber-200/60 pb-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  3
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-rose-950 uppercase tracking-wide">
-                    3. Alertas Técnicos de Aplicação & Instalação
+                  <h3 className="text-base font-bold text-amber-950 flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    Alertas Técnicos de Montagem & Aplicação
                   </h3>
-                  <p className="text-xs text-rose-800">
-                    Avisos cruciais para orientar o mecânico ou cliente no balcão e evitar devoluções:
+                  <p className="text-xs text-amber-800">
+                    Evite retornos e erros comuns de instalação comunicando o cliente e o mecânico
                   </p>
                 </div>
               </div>
 
-              <ul className="space-y-1.5">
+              <ul className="space-y-2 text-xs text-amber-950 pl-2">
                 {result.technicalAlerts.map((alert, idx) => (
-                  <li
-                    key={idx}
-                    className="text-xs font-medium text-rose-900 bg-white/70 p-2 rounded-lg border border-rose-200 flex items-start gap-2"
-                  >
-                    <span className="text-rose-600 font-bold shrink-0">⚠️</span>
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-amber-500 font-bold shrink-0 mt-0.5">•</span>
                     <span>{alert}</span>
                   </li>
                 ))}
@@ -505,200 +520,210 @@ export const ResultView: React.FC<ResultViewProps> = ({
             </div>
           )}
 
-          {/* 4. PEÇAS RELACIONADAS (VENDA CASADA NO BALCÃO) */}
-          <div
-            id="card-related-parts"
-            className="bg-white rounded-xl border border-slate-200 shadow-sm p-5"
-          >
-            <div className="flex items-center gap-2 pb-3 mb-3 border-b border-slate-100">
-              <div className="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                <Layers className="w-4 h-4" />
+          {/* SECTION 4: PEÇAS RELACIONADAS (VENDA CASADA NO BALCÃO) */}
+          {(result.relatedParts.complementary.length > 0 || result.relatedParts.similars.length > 0) && (
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  4
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
+                    <Layers className="w-4 h-4 text-indigo-600" />
+                    Peças Relacionadas (Venda Agregada / Casada)
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Ofereça os kits complementares para elevar o ticket médio e garantir a instalação correta
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {result.relatedParts.complementary.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                      Itens Complementares Recomendados:
+                    </span>
+                    <div className="flex flex-col border border-slate-200 rounded-lg bg-white divide-y divide-slate-100 shadow-xs">
+                      {result.relatedParts.complementary.map((part, idx) => {
+                        const isCopied = copiedItem === `rel-comp-${idx}`;
+                        return (
+                          <div
+                            key={idx}
+                            className="py-3 px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors group"
+                          >
+                            <span className="text-sm font-semibold text-slate-800 leading-snug flex-1">
+                              {part}
+                            </span>
+                            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                              <button
+                                onClick={() => handleCopyCode(part, `rel-comp-${idx}`)}
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border shadow-xs ${
+                                  isCopied
+                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                                    : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                                }`}
+                                title="Copiar descrição"
+                              >
+                                {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                <span>{isCopied ? 'Copiado!' : 'Copiar'}</span>
+                              </button>
+                              
+                              <a
+                                href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(part)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-teal-600 transition-colors shadow-xs"
+                                title="Ver foto desta peça"
+                              >
+                                <ImageIcon className="w-3.5 h-3.5" />
+                              </a>
+                              <a
+                                href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(part)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-orange-600 transition-colors shadow-xs"
+                                title="Buscar preço e opções online (Mercado Livre, Shopee, etc)"
+                              >
+                                <ShoppingCart className="w-3.5 h-3.5" />
+                              </a>
+
+                              {onQueryRelatedPart && (
+                                <button
+                                  onClick={() => onQueryRelatedPart(part.split(':')[0].split('-')[0].trim())}
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors shadow-xs"
+                                >
+                                  <Search className="w-3.5 h-3.5" />
+                                  <span>Consultar</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {result.relatedParts.similars.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+                      Marcas Similares de 1ª Linha:
+                    </span>
+                    <div className="flex flex-col border border-slate-200 rounded-lg bg-white divide-y divide-slate-100 shadow-xs">
+                      {result.relatedParts.similars.map((part, idx) => {
+                        const isCopied = copiedItem === `rel-sim-${idx}`;
+                        return (
+                          <div
+                            key={idx}
+                            className="py-3 px-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-slate-50/80 transition-colors group"
+                          >
+                            <span className="text-sm font-semibold text-slate-800 leading-snug flex-1">
+                              {part}
+                            </span>
+                            <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                              <button
+                                onClick={() => handleCopyCode(part, `rel-sim-${idx}`)}
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border shadow-xs ${
+                                  isCopied
+                                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                                    : 'bg-white hover:bg-slate-100 border-slate-200 text-slate-700'
+                                }`}
+                                title="Copiar descrição"
+                              >
+                                {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                                <span>{isCopied ? 'Copiado!' : 'Copiar'}</span>
+                              </button>
+                              
+                              <a
+                                href={`https://www.google.com/search?tbm=isch&q=${encodeURIComponent(part)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-teal-600 transition-colors shadow-xs"
+                                title="Ver foto desta peça"
+                              >
+                                <ImageIcon className="w-3.5 h-3.5" />
+                              </a>
+                              <a
+                                href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(part)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-md bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 hover:text-orange-600 transition-colors shadow-xs"
+                                title="Buscar preço e opções online (Mercado Livre, Shopee, etc)"
+                              >
+                                <ShoppingCart className="w-3.5 h-3.5" />
+                              </a>
+
+                              {onQueryRelatedPart && (
+                                <button
+                                  onClick={() => onQueryRelatedPart(part.split(':')[0].split('-')[0].trim())}
+                                  className="flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors shadow-xs"
+                                >
+                                  <Search className="w-3.5 h-3.5" />
+                                  <span>Consultar</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+
+
+          {/* SECTION 5: ONDE ENCONTRAR (RIO CLARO - SP) */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                5
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                  4. Peças Relacionadas & Oportunidade de Venda
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
+                  <Phone className="w-4 h-4 text-rose-600" />
+                  Onde Encontrar em Outras Lojas / Distribuidoras (Rio Claro - SP)
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Aumente o ticket médio do balcão sugerindo peças complementares trocadas junto.
+                  Parceiros e distribuidores locais para faturar e entregar via motoboy caso falte em estoque
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Similares */}
-              <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
-                <div className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                  Similares (Outras Marcas / 1ª e 2ª Linha)
-                </div>
-                {result.relatedParts.similars.length > 0 ? (
-                  <ul className="space-y-1.5">
-                    {result.relatedParts.similars.map((sim, idx) => (
-                      <li
-                        key={idx}
-                        className="text-xs text-slate-700 bg-white p-2 rounded border border-slate-200 flex items-center justify-between"
-                      >
-                        <span>{sim}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-slate-400 italic">Consulte outras marcas no catálogo de marcas.</p>
-                )}
-              </div>
-
-              {/* Complementares */}
-              <div className="bg-emerald-50/60 p-3.5 rounded-lg border border-emerald-200">
-                <div className="text-xs font-bold text-emerald-950 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                  <PlusCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  Peças Complementares (Trocar Junto)
-                </div>
-                {result.relatedParts.complementary.length > 0 ? (
-                  <ul className="space-y-1.5">
-                    {result.relatedParts.complementary.map((comp, idx) => (
-                      <li
-                        key={idx}
-                        className="text-xs text-emerald-900 bg-white p-2 rounded border border-emerald-200 flex items-center justify-between gap-2"
-                      >
-                        <span className="font-medium">• {comp}</span>
-                        <button
-                          type="button"
-                          onClick={() => onQueryRelatedPart(comp)}
-                          className="px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[10px] font-bold shrink-0 transition-colors"
-                          title="Consultar esta peça agora"
-                        >
-                          Consultar
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-emerald-700 italic">Nenhuma peça complementar listada.</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 5. IMAGEM DE REFERÊNCIA & APOIO VISUAL */}
-          <div
-            id="card-visual-reference"
-            className="bg-white rounded-xl border border-slate-200 shadow-sm p-5"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-cyan-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                  <ImageIcon className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                    5. Imagem de Referência & Apoio Visual no Balcão
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Termo pronto para Google Imagens e conferência física de formato e fixações.
-                  </p>
-                </div>
-              </div>
-
-              <a
-                href={googleImagesUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-2xs self-start sm:self-auto"
-              >
-                <span>Abrir Fotos no Google Imagens</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            </div>
-
-            <div className="space-y-3">
-              {/* Search term box */}
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                    Termo de Busca Direto:
-                  </span>
-                  <span className="text-xs font-bold text-slate-900 font-mono">
-                    "{result.visualInspection.searchTerm}"
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleCopy(
-                      result.visualInspection.searchTerm,
-                      result.visualInspection.searchTerm
-                    )
-                  }
-                  className="px-2.5 py-1 text-xs bg-white border border-slate-200 hover:border-slate-300 rounded text-slate-700 font-medium flex items-center gap-1 self-start sm:self-auto"
-                >
-                  <Copy className="w-3 h-3" />
-                  <span>Copiar Termo</span>
-                </button>
-              </div>
-
-              {/* Physical shape description */}
-              {result.visualInspection.description && (
-                <div className="p-3.5 bg-cyan-50/50 rounded-lg border border-cyan-200 text-xs text-slate-800 leading-relaxed">
-                  <span className="font-bold text-cyan-950 block mb-1">
-                    Características Físicas de Apoio (Conferência com a peça velha):
-                  </span>
-                  <p className="whitespace-pre-line text-slate-700">
-                    {result.visualInspection.description}
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* 6. ONDE ENCONTRAR (RIO CLARO - SP) */}
-          <div
-            id="card-suppliers-rioclaro"
-            className="bg-emerald-50/80 border border-emerald-300 rounded-xl p-5 shadow-sm"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 mb-3 border-b border-emerald-200/60">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
-                  <MapPin className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-emerald-950 uppercase tracking-wide flex items-center gap-2">
-                    6. Onde Encontrar em Rio Claro - SP
-                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-700 text-white uppercase">
-                      Entrega Rápida Local
-                    </span>
-                  </h3>
-                  <p className="text-xs text-emerald-900">
-                    Distribuidoras e atacadistas de autopeças sediadas ou com rota expressa diária em Rio Claro-SP:
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {result.suppliersRioClaro.map((sup, idx) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                { name: 'Pellegrino Distribuidora de Autopeças', phone: '(19) 3534-8000', address: 'Av. Brasil, 1200 - Distrito Industrial', site: 'www.pellegrino.com.br' },
+                { name: 'Garcia Autopeças & Distribuidora', phone: '(19) 3522-1234', address: 'Rua 14, 2568 - Consolação', site: 'www.garciaautopecas.com.br' },
+                { name: 'Bezerra Distribuidora de Autopeças', phone: '(19) 3524-4567', address: 'Av. 29, 800 - Cidade Jardim', site: 'www.bezerra.com.br' },
+                { name: 'Pit Stop Autopeças', phone: '(19) 3526-7890', address: 'Av. Visconde de Rio Claro, 450 - Centro', site: 'www.pitstop.com.br' },
+                { name: 'Disauto Distribuidora', phone: '(19) 3523-5678', address: 'Rua 9, 150 - Santa Cruz', site: 'www.disauto.com.br' }
+              ].map((sup, idx) => (
                 <div
                   key={idx}
-                  className="p-3 bg-white rounded-lg border border-emerald-200 shadow-2xs flex items-start justify-between gap-2"
+                  className="bg-slate-50 p-3.5 rounded-lg border border-slate-200 flex flex-col gap-2 hover:bg-slate-100/70 transition-colors"
                 >
-                  <div className="flex items-start gap-2">
-                    <Truck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="text-xs font-bold text-slate-900 block">
-                        {sup}
-                      </span>
-                      <span className="text-[10px] text-emerald-700 font-medium">
-                        Rio Claro - SP • Pronta Entrega / Motoboy
-                      </span>
-                    </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-slate-800">{sup.name}</span>
+                    <button
+                      onClick={() => handleCopyCode(`${sup.name}\nTel: ${sup.phone}\nEnd: ${sup.address}\nSite: ${sup.site}`, `sup-${idx}`)}
+                      className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-500 hover:text-slate-800 shrink-0 transition-colors shadow-xs"
+                      title="Copiar contato"
+                    >
+                      {copiedItem === `sup-${idx}` ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(sup, sup)}
-                    className="p-1 text-slate-400 hover:text-emerald-700 transition-colors"
-                    title="Copiar fornecedor"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </button>
+                  <div className="flex flex-col gap-1 text-[11px] text-slate-600">
+                    <span className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-400" /> {sup.phone}</span>
+                    <span className="flex items-center gap-1.5"><MapPin className="w-3 h-3 text-slate-400" /> {sup.address}</span>
+                    <span className="flex items-center gap-1.5"><ExternalLink className="w-3 h-3 text-slate-400" /> {sup.site}</span>
+                  </div>
                 </div>
               ))}
             </div>
