@@ -71,14 +71,14 @@ let geminiCooldownUntil = 0;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
-    return res.status(405)on({ error: "Method not allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
   
   try {
     const { vehicle, year, part, engine, notes, answers } = req.body;
 
     if (!vehicle || !part) {
-      return res.status(400)on({ error: "Veículo e Peça são obrigatórios." });
+      return res.status(400).json({ error: "Veículo e Peça são obrigatórios." });
     }
 
     let markdown = "";
@@ -234,7 +234,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       verifiedSources = relevantCatalogs;
     }
 
-    reson({
+    res.json({
       markdown,
       usedFallback,
       isQuotaExceeded,
@@ -242,7 +242,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err: any) {
     console.error("[Balcão Autopeças] Erro geral ao processar consulta:", err);
-    res.status(500)on({
+    res.status(500).json({
       error: "Falha interna ao processar consulta de catálogo.",
       details: err?.message || String(err),
     });
