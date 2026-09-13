@@ -62,8 +62,10 @@ ESTRUTURA DE RESPOSTA OBRIGATÓRIA EM MARKDOWN (Nesta exata sequência numerada 
 - Termo de busca pronto: "[nome da peça] [marca e código] [veículo]"
 - Descrição visual da peça (formato do corpo, número de furos na base, suportes soldados, pinos, conectores e travas) para conferir com a peça velha na bancada.
 
-6. ONDE ENCONTRAR (se não tiver em loja - Rio Claro - SP)
-- Liste distribuidoras e atacados locais de Rio Claro - SP com rota rápida de entrega e motoboy (Pellegrino Distribuidora, Garcia Autopeças, Bezerra Autopeças, Pit Stop Rio Claro, Disauto).
+6. ONDE ENCONTRAR (Pesquisa de Mercado)
+- Você DEVE usar a ferramenta de busca do Google para encontrar quem vende ESTA PEÇA ESPECÍFICA (com o código de referência exato) na internet hoje.
+- Informe links ou nomes de grandes lojas online (ex: Mercado Livre, MercadoCar, Jocar, Canal da Peça, Shopee) ou distribuidoras que possuem esse código em estoque.
+- Se houver estoque local disponível ou distribuidores da marca na região de Rio Claro - SP, priorize mencioná-los. Se não, liste as melhores opções nacionais reais de compra.
 
 TOM: Ultra-objetivo, técnico e focado no balcão de vendas.`;
 
@@ -140,9 +142,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             Object.entries(answers)
               .map(([q, a]) => `- Pergunta: "${q}" -> Resposta: "${a}"`)
               .join("\n");
-          userPrompt += `\nCom base nessas respostas confirmadas pelo cliente, filtre e forneça agora os códigos de referência únicos e exatos das marcas e todas as 6 seções completas.`;
+          userPrompt += `\nCom base nessas respostas confirmadas pelo cliente, filtre e forneça agora os códigos de referência únicos e exatos das marcas e todas as 6 seções completas, LEMBRANDO de buscar onde encontrar essa peça online ou na região de SP/Rio Claro.`;
         } else {
-          userPrompt += `\nLembre-se: Liste as perguntas de triagem na Seção 1 se houver variações. E na Seção 2 FORNEÇA NO ATO OS CÓDIGOS REAIS DAS MARCAS (Nakata, Cofap, Monroe, Bosch, etc.) para cada opção. NUNCA diga 'verificar no sistema'.`;
+          userPrompt += `\nLembre-se: Liste as perguntas de triagem na Seção 1 se houver variações. E na Seção 2 FORNEÇA NO ATO OS CÓDIGOS REAIS DAS MARCAS (Nakata, Cofap, Monroe, Bosch, etc.) para cada opção. NUNCA diga 'verificar no sistema'. Faça a pesquisa real de mercado para preencher a seção ONDE ENCONTRAR (focando em lojas online ou da região de SP / Rio Claro).`;
         }
 
         // 8-second timeout to ensure the counter clerk never waits too long
@@ -159,6 +161,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               config: {
                 systemInstruction: SYSTEM_INSTRUCTION,
                 temperature: 0.1,
+                tools: [{ googleSearch: {} }],
               },
             }),
             timeoutPromise,
@@ -173,6 +176,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               config: {
                 systemInstruction: SYSTEM_INSTRUCTION,
                 temperature: 0.1,
+                tools: [{ googleSearch: {} }],
               },
             });
           } else {
@@ -271,11 +275,7 @@ export function generateInstantCatalogResult(
   const ansStr = answers ? Object.values(answers).join(' ').toLowerCase() : '';
   const context = `${v} ${year} ${eng} ${not} ${ansStr}`;
 
-  const rioClaroSuppliers = `- Pellegrino Distribuidora de Autopeças (Rio Claro - SP - Rota expressa para balcão e oficinas)
-- Garcia Autopeças & Distribuidora (Rio Claro - SP - Pronta entrega balcão / Linha suspensão e freio)
-- Bezerra Distribuidora de Autopeças (Rio Claro - SP - Atacado e entrega rápida)
-- Pit Stop Autopeças (Rio Claro - SP - Linha elétrica, injeção e arrefecimento)
-- Disauto Distribuidora de Autopeças (Rio Claro - SP - Moto-entrega expressa)`;
+  const rioClaroSuppliers = `- (Busca Automática Offline) Consulte distribuidores regionais oficiais (ex: Pellegrino, Garcia, Bezerra) ou plataformas como MercadoCar, Jocar e Mercado Livre (Canal da Peça) utilizando o código de referência acima.`;
 
   // ==========================================
   // 1. AMORTECEDOR (DIANTEIRO / TRASEIRO)

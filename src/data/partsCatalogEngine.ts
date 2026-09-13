@@ -21,11 +21,7 @@ export function generateInstantCatalogResult(
   const ansStr = answers ? Object.values(answers).join(' ').toLowerCase() : '';
   const context = `${v} ${year} ${eng} ${not} ${ansStr}`;
 
-  const rioClaroSuppliers = `- Pellegrino Distribuidora de Autopeças (Rio Claro - SP - Rota expressa para balcão e oficinas)
-- Garcia Autopeças & Distribuidora (Rio Claro - SP - Pronta entrega balcão / Linha suspensão e freio)
-- Bezerra Distribuidora de Autopeças (Rio Claro - SP - Atacado e entrega rápida)
-- Pit Stop Autopeças (Rio Claro - SP - Linha elétrica, injeção e arrefecimento)
-- Disauto Distribuidora de Autopeças (Rio Claro - SP - Moto-entrega expressa)`;
+  const rioClaroSuppliers = `- (Busca Automática Offline) Consulte distribuidores regionais oficiais (ex: Pellegrino, Garcia, Bezerra) ou plataformas como MercadoCar, Jocar e Mercado Livre (Canal da Peça) utilizando o código de referência acima.`;
 
   // ==========================================
   // 1. AMORTECEDOR (DIANTEIRO / TRASEIRO)
