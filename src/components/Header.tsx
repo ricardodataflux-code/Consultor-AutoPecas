@@ -26,8 +26,12 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           {/* Brand & Identity */}
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-inner font-black text-xl shrink-0">
-              <Wrench className="w-5 h-5 text-white" />
+            <div className="w-14 h-14 rounded-lg bg-white p-1 flex items-center justify-center shrink-0 shadow-sm border border-slate-700">
+              <img 
+                src="/roncoli-logo.png" 
+                alt="Roncoli Auto Peças Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center space-x-2">
