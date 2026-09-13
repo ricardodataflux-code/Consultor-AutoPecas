@@ -234,7 +234,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       verifiedSources = relevantCatalogs;
     }
 
-    res.json({
+    return res.json({
       markdown,
       usedFallback,
       isQuotaExceeded,
@@ -242,7 +242,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (err: any) {
     console.error("[Balcão Autopeças] Erro geral ao processar consulta:", err);
-    res.status(500).json({
+    return res.status(500).json({
       error: "Falha interna ao processar consulta de catálogo.",
       details: err?.message || String(err),
     });
