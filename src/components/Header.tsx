@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Wrench, MapPin, Sparkles, BookOpen, Clock, PlusCircle } from 'lucide-react';
+import { RoncoliLogo } from './RoncoliLogo';
 
 interface HeaderProps {
   onNewQuery: () => void;
@@ -26,13 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           {/* Brand & Identity */}
           <div className="flex items-center space-x-3">
-            <div className="w-14 h-14 rounded-lg bg-white p-1 flex items-center justify-center shrink-0 shadow-sm border border-slate-700">
-              <img 
-                src="/roncoli-logo.png" 
-                alt="Roncoli Auto Peças Logo" 
-                className="w-full h-full object-contain"
-              />
-            </div>
+            <RoncoliLogo className="w-14 h-14" />
             <div>
               <div className="flex items-center space-x-2">
                 <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
