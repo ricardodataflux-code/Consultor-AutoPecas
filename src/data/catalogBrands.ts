@@ -7,6 +7,7 @@ export interface CatalogBrand {
 }
 
 export const CATALOG_BRANDS: CatalogBrand[] = [
+  { name: 'Ideia2001 (Catálogo Expresso)', category: 'Catálogo Eletrônico', description: 'Sistema de Catálogo Eletrônico Integrado Multi-marcas' },
   { name: 'LUK', category: 'Embreagem', description: 'Kits de embreagem, atuadores hidráulicos e volantes bimassa (Líder OEM)' },
   { name: 'Valeo', category: 'Embreagem e Elétrica', description: 'Sistemas de embreagem, motores de partida, alternadores e palhetas' },
   { name: 'Sachs', category: 'Embreagem e Suspensão', description: 'Platôs, discos de embreagem e amortecedores linha pesada/leve' },
@@ -146,6 +147,13 @@ export interface OfficialCatalogEntry {
 }
 
 export const OFFICIAL_MANUFACTURER_CATALOGS: OfficialCatalogEntry[] = [
+  {
+    brandKeywords: ['ideia2001', 'catalogo expresso', 'ideia'],
+    name: 'Ideia2001 - Catálogo Expresso',
+    portalUrl: 'https://www.ideia2001.com.br/',
+    badge: 'Ideia2001 Integrado',
+    description: 'Catálogo de Auto Peças e Sistema de Busca Multi-fabricantes.',
+  },
   {
     brandKeywords: ['nakata'],
     name: 'Catálogo Oficial Nakata Online',
