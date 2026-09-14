@@ -5,13 +5,11 @@ import { CATALOG_BRANDS } from '../data/catalogBrands';
 interface BrandsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectBrand?: (brandName: string) => void;
 }
 
 export const BrandsModal: React.FC<BrandsModalProps> = ({
   isOpen,
   onClose,
-  onSelectBrand,
 }) => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Todas');
@@ -99,21 +97,6 @@ export const BrandsModal: React.FC<BrandsModalProps> = ({
                 </div>
                 <p className="text-xs text-slate-600 leading-snug">{brand.description}</p>
               </div>
-
-              {onSelectBrand && (
-                <div className="mt-3 pt-2 border-t border-slate-100 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSelectBrand(brand.name);
-                      onClose();
-                    }}
-                    className="text-[11px] font-bold text-blue-600 hover:text-blue-800"
-                  >
-                    Usar na Consulta →
-                  </button>
-                </div>
-              )}
             </div>
           ))}
         </div>

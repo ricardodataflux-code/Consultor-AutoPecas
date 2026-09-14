@@ -309,15 +309,6 @@ export default function App() {
       <BrandsModal
         isOpen={isBrandsModalOpen}
         onClose={() => setIsBrandsModalOpen(false)}
-        onSelectBrand={(brand) => {
-          // Can be used to filter or append brand preference
-          if (activeParams) {
-            executeQuery({
-              ...activeParams,
-              notes: (activeParams.notes ? activeParams.notes + ' ' : '') + `Preferência de marca: ${brand}`,
-            });
-          }
-        }}
       />
 
       <SuppliersModal
