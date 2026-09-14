@@ -150,14 +150,14 @@ app.post("/api/query-part", async (req, res) => {
             Object.entries(answers)
               .map(([q, a]) => `- Pergunta: "${q}" -> Resposta: "${a}"`)
               .join("\n");
-          userPrompt += `\nCom base nessas respostas confirmadas pelo cliente, filtre e forneça agora os códigos de referência únicos e exatos das marcas e todas as 6 seções completas.`;
+          userPrompt += `\nCom base nessas respostas confirmadas, UTILIZE A BUSCA ONLINE (Google Search) nos catálogos dos fabricantes (ex: site:nakata.com.br, site:cofap.com.br, site:catalogocobreq.com.br) para encontrar e listar os códigos de referência exatos.`;
         } else {
-          userPrompt += `\nLembre-se: Liste as perguntas de triagem na Seção 1 se houver variações. E na Seção 2 FORNEÇA NO ATO OS CÓDIGOS REAIS DAS MARCAS (Nakata, Cofap, Monroe, Bosch, etc.) para cada opção. NUNCA diga 'verificar no sistema'.`;
+          userPrompt += `\nLembre-se: UTILIZE A BUSCA ONLINE (Google Search) nos catálogos oficiais dos fabricantes agora para trazer os códigos reais! Liste perguntas na Seção 1 se houver variações. E na Seção 2 FORNEÇA NO ATO OS CÓDIGOS.`;
         }
 
-        // 8-second timeout to ensure the counter clerk never waits too long
+        // 12-second timeout to allow Google Search grounding to complete
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout na consulta à IA")), 8000)
+          setTimeout(() => reject(new Error("Timeout na consulta à IA (Busca Online demorou muito)")), 12000)
         );
 
         let response: any = null;
@@ -169,6 +169,7 @@ app.post("/api/query-part", async (req, res) => {
               config: {
                 systemInstruction: SYSTEM_INSTRUCTION,
                 temperature: 0.1,
+                tools: [{ googleSearch: {} }],
               },
             }),
             timeoutPromise,
@@ -183,6 +184,7 @@ app.post("/api/query-part", async (req, res) => {
               config: {
                 systemInstruction: SYSTEM_INSTRUCTION,
                 temperature: 0.1,
+                tools: [{ googleSearch: {} }],
               },
             });
           } else {
