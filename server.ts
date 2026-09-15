@@ -32,57 +32,64 @@ const SYSTEM_INSTRUCTION = `Você é um balconista sênior especialista em autop
 Você atua com foco em fechar vendas rápidas, assertivas e 100% corretas no balcão e por telefone.
 
 CATÁLOGOS OFICIAIS DE REFERÊNCIA QUE VOCÊ DEVE CONSULTAR E CRUZAR CÓDIGOS:
+- SCHAEFFLER (LUK / INA / FAG): Kits de embreagem Repxpert, atuadores hidráulicos, rolamentos de embreagem e roda, tensores.
+- ZF AFTERMARKET (SACHS / LEMFÖRDER): Kits de embreagem, atuadores, amortecedores, bandejas e direção.
+- VALEO SERVICE: Sistemas de embreagem, atuadores hidráulicos, motores de partida, alternadores.
 - NAKATA: Suspensão, amortecedores, pivôs, terminais de direção e axiais, bieletas, juntas homocinéticas, bombas d'água.
 - COBREQ: Freios, pastilhas dianteiras e traseiras, sapatas, lonas, fluidos de freio.
 - FRAS-LE: Pastilhas Ceramaxx/Lonaflex, discos e tambores de freio.
 - BOSCH AUTOMOTIVE BRASIL: Injeção eletrônica, velas de ignição, cabos, bobinas, filtros, freios, bombas de combustível.
 - COFAP / MAGNETI MARELLI: Amortecedores Turbogás/Super, molas, bandejas, pastilhas.
 - MONROE & MONROE AXIOS: Amortecedores OESpectrum/Gas Premium, kits de batente, coxins, buchas de suspensão.
-- SCHAEFFLER (LUK / INA / FAG): Kits de embreagem Repxpert, rolamentos de roda, atuadores, tensores de correia.
-- ZF AFTERMARKET (SACHS / LEMFÖRDER): Kits de embreagem, amortecedores, componentes de direção.
 - FREMAX: Discos de freio de carbono, tambores.
-- SABÓ: Retentores, juntas de motor, mangueiras, guarnições.
-- GATES / DAYCO / CONTINENTAL CONTITECH: Correias dentadas sincronizadoras, kits sincronizadores, correias Poly-V, tensores.
+- SABÓ: Retentores de volante, comando, juntas de motor, mangueiras, guarnições.
+- GATES / DAYCO / CONTINENTAL CONTITECH: Correias dentadas sincronizadoras, kits com tensores, correias Poly-V.
 - MAHLE / METAL LEVE: Filtros, anéis de segmento, pistões, bronzinas.
 - NGK / NTK: Velas de ignição Green/G-Power/Laser Iridium, cabos supressores, sensores de oxigênio (sonda lambda).
 - SKF: Rolamentos e cubos de roda, bombas d'água, tensores.
-- URBA / BROSOL / SCHADEK: Bombas d'água, bombas de combustível mecânicas e elétricas, bombas de óleo.
-- VALCLEI / WAHLER / IGUAÇU: Válvulas termostáticas, carcaças de água, sensores de temperatura.
-- SYL / TECPADS: Pastilhas de freio para veículos nacionais e importados.
-- TECFIL / WEGA: Filtros de óleo, combustível, ar do motor e ar-condicionado/cabine.
+- TRW / VARGA: Sistemas de freio, cilindros mestre, cilindros de roda, atuadores de embreagem.
+- FANIA / FAMA: Cabos de embreagem, acelerador e freio de mão.
+- URBA / BROSOL / SCHADEK: Bombas d'água, bombas de combustível, bombas de óleo.
+- TECFIL / WEGA: Filtros de óleo, combustível, ar do motor e cabine.
 
-REGRA DE TRIAGEM:
-- Se as informações fornecidas (marca, modelo, ano, motor, versão, ABS, câmbio, direção) já definirem uma aplicação técnica única, NÃO faça perguntas desnecessárias: vá direto aos códigos na Seção 2!
-- Se faltar algo crítico que mude a peça (ex: se o usuário não indicou se tem ABS para uma pastilha de Onix que muda com/sem ABS), liste as perguntas na Seção 1.
+REGRA DE ESTRUTURAÇÃO OBRIGATÓRIA (Siga RIGOROSAMENTE esta ordem de 1 a 6):
 
-FORMATO OBRIGATÓRIO DE RESPOSTA (Mantenha os números "1.", "2." exatamente antes dos títulos):
+1. PERGUNTAS DE CONFIRMAÇÃO
+- Se houver dúvidas técnicas críticas que alterem o código (ex: versão da carroceria, câmbio manual vs automatizado Dualogic, diâmetro do disco 180mm vs 190mm, com ABS vs sem ABS), formule de 2 a 4 perguntas diretas.
+- Se a aplicação já estiver 100% definida pelos dados informados, responda: "- Nenhuma pendência técnica. Aplicação fechada para [Veículo/Ano/Motor]."
 
-# 1. PERGUNTAS DE CONFIRMAÇÃO
-(Se houver dúvidas técnicas, liste no máximo 3 a 5 perguntas objetivas. Se todas as características já tiverem sido confirmadas, declare: "- Nenhuma pendência técnica. Aplicação fechada para [Veículo/Ano/Motor].")
+2. ALERTAS TÉCNICOS
+(Estruture obrigatoriamente com os tópicos abaixo usando bullet points):
+- Variação de Lote: [Diferenças de lote, diâmetro, estrias ou ano de transição da peça]
+- Componente Opcional: [O que acompanha ou NÃO acompanha a peça/kit, ex: se o atuador hidráulico vem junto ou é vendido à parte]
+- Falha Comum: [Sintomas típicos de desgaste e causas recorrentes no veículo, ex: pedal duro, trepidações, ruídos]
+- Recomendação Mecânica: [Cuidados indispensáveis de montagem na oficina, ex: passe/retífica do volante do motor, sangria, escorvamento]
 
-# 2. CÓDIGOS DE REFERÊNCIA
-- **Original (Montadora):** [Código OEM da montadora, se houver]
-- **Nakata:** [Código Nakata]
-- **Cobreq:** [Código Cobreq]
-- **[Outra Marca 1]:** [Código] - [Breve descrição ou aplicação]
-- **[Outra Marca 2]:** [Código] - [Breve descrição]
-(Liste as marcas líderes compatíveis com a peça solicitada, ex: Fras-le, Bosch, Cofap, LUK, Monroe, etc.)
+3. CÓDIGOS DE REFERÊNCIA
+- Montadora ([Marca]): [Código OEM oficial da montadora]
+- [Marca Líder 1 (ex: LuK / Nakata / Cobreq)]: [Código] ([Descrição exata do kit/peça, estrias, diâmetro, se inclui platô+disco+rolamento])
+- [Marca Líder 2 (ex: Sachs / Cofap / Fras-le)]: [Código] ([Descrição da peça])
+- [Marca Líder 3 (ex: Valeo / Bosch / Monroe)]: [Código] ([Descrição da peça])
+(Traga os códigos reais dos principais fabricantes de autopeças de 1ª linha).
 
-# 3. OBSERVAÇÕES TÉCNICAS DE MONTAGEM
-(Dicas práticas de oficina: escorvamento de amortecedor, torque, sangria, troca de fluido, limpeza de disco, etc.)
+4. PEÇAS RELACIONADAS
+(Itens complementares e de venda casada para garantir a montagem completa e elevar o ticket do balcão):
+- [Nome do Componente 1]: [Fabricante] - [Código]
+- [Nome do Componente 2]: [Fabricante] - [Código]
+- [Nome do Componente 3]: [Fabricante] - [Código]
+- [Óleo / Fluido Recomendado]: [Marca / Especificação] - [Volume recomendado]
 
-# 4. PEÇAS RELACIONADAS
-- **Similares:** [Marcas alternativas de reposição]
-- **Complementares para venda casada:** [Itens que devem ser trocados juntos para garantir a garantia, ex: batentes para amortecedor, discos para pastilha]
+5. IMAGEM DE REFERÊNCIA
+- Termos de busca e especificações visuais de verificação: [Termo de busca completo incluindo carro, ano e marcas, e descrição física dos componentes (formato do platô, ranhuras, molas, medidas em mm, número de dentes/estrias) para o balconista conferir na bancada com a peça velha].
 
-# 5. IMAGEM DE REFERÊNCIA
-- **Termo de busca pronto:** "[Nome da peça] [Marca da peça] [Código da peça] [Carro e Ano]"
-- **Descrição visual:** [Descreva o formato físico, número de furos/estrias, orelhas, conectores ou aspecto visual para o balconista conferir na mão]
+6. ONDE ENCONTRAR (Rio Claro-SP)
+(Lojas e distribuidoras locais em Rio Claro-SP com pronta entrega e agilidade de balcão):
+- Auto Peças 3R: Rua 06 A, 1269 - Vila Alemã. Telefone: (19) 3535-4499. Integrante da Rede PitStop, com entrega rápida de balcão.
+- AutoZone Rio Claro: Av. Presidente Tancredo de Almeida Neves, 535. Telefone fixo: (19) 2111-2750 / WhatsApp Mecânicas: (11) 94078-1966. Amplo estoque local para pronta entrega.
+- Dinâmica Auto Peças: Avenida 15 JP, 56 - Jardim Esmeralda. Telefone/WhatsApp: (19) 98185-5828. Foco em atendimento rápido regional.
+- Disauto Distribuidora: Rio Claro-SP. Telefone: (19) 3526-9000. Atacado automotivo com faturamento para oficinas.
 
-# 6. ONDE ENCONTRAR (se não tiver em loja)
-Sugira fornecedores/distribuidoras de autopeças de Rio Claro-SP com entrega rápida de balcão (Disauto Distribuidora Rio Claro, Pitstop / Rede Âncora Rio Claro, Bezerra Autopeças Rio Claro, Distribuidora Padre Bento).
-
-TOM: direto, técnico, sem enrolação.`;
+TOM: profissional, técnico, direto, sem enrolação.`;
 
 function generateBalcaoCatalogMarkdown(params: {
   fullVehicle: string;
@@ -125,9 +132,15 @@ function generateBalcaoCatalogMarkdown(params: {
   let nakataCode = "HG33000";
   let cobreqCode = "N-1200";
   let extraBrands: Array<{ brand: string; code: string; note: string }> = [];
-  let montagemNote = "Limpar a superfície de contato antes da instalação. Verificar torque recomendado pelo fabricante.";
+  let loteAlert = "Conferir ano de fabricação e modelo no documento do veículo para evitar divergência de lote.";
+  let opcionalAlert = "Verificar se o kit acompanha todos os componentes auxiliares de fixação.";
+  let falhaAlert = "Desgaste natural e folgas de funcionamento provocam ruídos e perda de eficiência.";
+  let mecanicaAlert = "Limpar a superfície de contato antes da instalação. Verificar torque recomendado pelo fabricante.";
   let similarParts = "Linha de reposição disponível em Nakata, Cobreq, Fras-le, Bosch e Cofap.";
-  let compParts = "Recomenda-se a troca preventiva de itens de desgaste associados.";
+  let compPartsList: string[] = [
+    "Recomenda-se a troca preventiva de itens de desgaste associados.",
+    "Parafusos e presilhas de fixação novas.",
+  ];
   let visualDesc = "Peça metálica/composta com encaixe específico conforme modelo e furação original.";
 
   // HB20
@@ -230,7 +243,29 @@ function generateBalcaoCatalogMarkdown(params: {
   }
   // PALIO / UNO / STRADA / SIENA
   else if (v.includes('palio') || v.includes('uno') || v.includes('strada') || v.includes('siena')) {
-    if (p.includes('pastilha') || p.includes('freio')) {
+    if (p.includes('embreagem')) {
+      originalCode = "55223447 / 55204467";
+      nakataCode = "LuK 619 3015 00";
+      cobreqCode = "Sachs 6586";
+      extraBrands = [
+        { brand: "Valeo", code: "228213", note: "Kit com Platô + Disco 190mm + Rolamento" },
+        { brand: "LuK", code: "619 3015 00", note: "Kit RepXpert (Platô + Disco 190mm + Rolamento)" },
+        { brand: "Sachs", code: "6586", note: "Kit com Platô + Disco 190mm + Rolamento" },
+      ];
+      loteAlert = "Modelos 2008 usam originalmente o kit de 190mm e 20 estrias, mas alguns lotes de transição ou motores recuperados rodam com volante de motor para 180mm. Confirmar no balcão.";
+      opcionalAlert = "O kit não acompanha o atuador hidráulico de embreagem.";
+      falhaAlert = "Pedal duro no Palio Fire geralmente é causado por desgaste acentuado nas faces do platô e rolamento guia desalinhado.";
+      mecanicaAlert = "Exigir que o mecânico faça o passe ou retífica do volante do motor antes de instalar o kit novo para evitar trepidações e perda de garantia.";
+      similarParts = "LuK 619 3015 00 (Original de fábrica), Sachs 6586, Valeo 228213.";
+      compPartsList = [
+        "Atuador Hidráulico de Embreagem (Pedal): LuK - 511012710",
+        "Cilindro Escravo de Embreagem (Câmbio): TRW - RCCE00110",
+        "Cabo de Embreagem (Se mecânico): Fania - 61123",
+        "Retentor do Volante do Motor: Sabó - 02253BRGF",
+        "Óleo de Câmbio Recomendado: Tutela 75W80 Synthetic - 1 Litro",
+      ];
+      visualDesc = "Kit com Platô com diafragma de 190mm, Disco de 20 estrias com amortecimento torcional e Rolamento mecânico de desengate.";
+    } else if (p.includes('pastilha') || p.includes('freio')) {
       originalCode = "7084200 / 7087697";
       cobreqCode = "N-534";
       nakataCode = "PW534";
@@ -239,9 +274,16 @@ function generateBalcaoCatalogMarkdown(params: {
         { brand: "SYL", code: "SYL1098", note: "Reposição rápida" },
         { brand: "Bosch", code: "0986BB0702", note: "Linha cerâmica/metálica" },
       ];
-      montagemNote = "Motor Fire 1.0/1.4. Conferir espessura mínima do disco (9.0mm para sólido, 18.2mm para ventilado).";
+      loteAlert = "Conferir espessura e tipo de disco (9.0mm para sólido, 18.2mm para ventilado).";
+      opcionalAlert = "Não acompanha presilhas e pinos de travamento em algumas marcas secundárias.";
+      falhaAlert = "Ruído agudo de frenagem provocado por falta de desbaste ou assentamento em disco riscado.";
+      mecanicaAlert = "Limpar a pinça, desengraxar os discos com solvente e aplicar pasta anti-ruído nas costas da pastilha.";
       similarParts = "Cobreq N-534, Fras-le PD/60, Nakata PW534.";
-      compParts = "Disco de freio Fremax BD-4534 e flexíveis dianteiros.";
+      compPartsList = [
+        "Disco de Freio Dianteiro: Fremax - BD-4534",
+        "Fluido de Freio DOT 4: Bosch - 0986BB0001",
+        "Kit de Reparo e Flexível: Varga - RPF00120",
+      ];
       visualDesc = "Pastilha compacta com recorte curvo inferior e mola de retenção superior.";
     } else if (p.includes('correia') || p.includes('dentada')) {
       originalCode = "46759750 / 55203790";
@@ -251,29 +293,228 @@ function generateBalcaoCatalogMarkdown(params: {
         { brand: "Dayco", code: "KTB271", note: "Kit completo com tensor automático" },
         { brand: "Ina", code: "530 0110 10", note: "Rolamento tensor original" },
       ];
-      montagemNote = "Motor Fire 8V (129 dentes). Utilizar ferramenta de fasagem para travar eixo de comando e virabrequim.";
+      loteAlert = "Motor Fire 8V utiliza correia de 129 dentes. Conferir modelo exato do tensor (mecânico vs automático).";
+      opcionalAlert = "Kit básico não inclui bomba d'água nem correia de acessórios poly-v.";
+      falhaAlert = "Ruído de rolamento chiando indica fadiga do tensor; rompimento da correia empena válvulas.";
+      mecanicaAlert = "Utilizar obrigatoriamente ferramenta de fasagem para travar comando e virabrequim no PMS.";
       similarParts = "Gates KS201, Contitech CT488K1, Dayco KTB271.";
-      compParts = "Bomba d'água Urba UB0762 ou Schadek 20.144 e correia de acessórios 4PK.";
-      visualDesc = "Correia de borracha HNBR de alta resistência térmica com dente arredondado e rolamento tensor metálico.";
+      compPartsList = [
+        "Bomba d'Água: Urba - UB0762",
+        "Correia de Acessórios Alternador: Gates - 4PK0668",
+        "Aditivo de Radiador Pronto Uso: Tirreno / Paraflu - 1 Litro",
+      ];
+      visualDesc = "Correia sincronizadora de borracha HNBR com 129 dentes e rolamento tensor metálico.";
     }
   }
-  // GENERIC AUTOMOTIVE CALCULATION (Fallback for any car/part)
+  // CORSA / CELTA / CLASSIC / MONTANA (GM Família I)
+  else if (v.includes('corsa') || v.includes('celta') || v.includes('classic') || v.includes('montana') || v.includes('prisma antigo')) {
+    if (p.includes('embreagem')) {
+      originalCode = "93399066 / 93332205";
+      nakataCode = "LuK 618 3018 00";
+      cobreqCode = "Sachs 6284";
+      extraBrands = [
+        { brand: "Valeo", code: "228205", note: "Kit Platô + Disco 180mm + Rolamento mecânico" },
+        { brand: "LuK", code: "618 3018 00", note: "Kit RepSet (180mm, 14 estrias)" },
+        { brand: "Sachs", code: "6284", note: "Kit tradicional linha Família I" },
+      ];
+      loteAlert = "Motores 1.0 e 1.4 usam disco de 180mm com 14 estrias. Motores 1.8 usam disco de 200mm.";
+      opcionalAlert = "Não acompanha garfo de embreagem e nem retentor traseiro do virabrequim.";
+      falhaAlert = "Trepidação na saída e pedal pesado por endurecimento das molas do platô e desgaste do rolamento.";
+      mecanicaAlert = "Verificar estado do volante do motor, folga do eixo piloto e engraxar o tubo guia com graxa sintética fina.";
+      similarParts = "LuK 618 3018 00, Sachs 6284, Valeo 228205.";
+      compPartsList = [
+        "Cabo de Embreagem: Fania - 34105",
+        "Retentor do Volante do Motor: Sabó - 02253BRGF",
+        "Óleo de Câmbio SAE 75W85 ou 80W: ACDelco - 93231454",
+      ];
+      visualDesc = "Kit com Platô 180mm, Disco com 4 molas amortecedoras e Rolamento guia de encaixe mecânico.";
+    } else if (p.includes('pastilha') || p.includes('freio')) {
+      originalCode = "93282464 / 93388686";
+      cobreqCode = "N-324";
+      nakataCode = "PW324";
+      extraBrands = [
+        { brand: "Fras-le", code: "PD/54", note: "Sistema Varga dianteiro" },
+        { brand: "Bosch", code: "0986BB0748", note: "Pastilha com calço anti-ruído" },
+        { brand: "SYL", code: "SYL1089", note: "Excelente custo no balcão" },
+      ];
+      loteAlert = "Corsa e Celta até 2009 utilizam sistema Varga simples. Modelos com disco ventilado usam pastilha mais espessa.";
+      opcionalAlert = "O kit de pastilhas não inclui o fluido de freio nem os sangradores.";
+      falhaAlert = "Assobio e chiado ao frear devido a ressecamento e falta de chanfro nas bordas.";
+      mecanicaAlert = "Lixar de leve as bordas da pastilha, limpar cavalete com desengraxante e inspecionar coifas dos pinos deslizantes.";
+      similarParts = "Cobreq N-324, Fras-le PD/54, Nakata PW324, Bosch 0986BB0748.";
+      compPartsList = [
+        "Disco de Freio Dianteiro Sólido: Fremax - BD-1111",
+        "Fluido de Freio DOT 4: Bosch - 0986BB0001",
+        "Kit de Reparo dos Pinos Guia: Varga - RPF00340",
+      ];
+      visualDesc = "Jogo de 4 pastilhas com chapa traseira antivibratória e mola de sustentação.";
+    } else if (p.includes('amortecedor')) {
+      originalCode = "93297746 (Diant)";
+      nakataCode = "HG33005";
+      cobreqCode = "Cofap GP30061";
+      extraBrands = [
+        { brand: "Monroe", code: "SP049", note: "Linha Monroe Gas Premium" },
+        { brand: "Nakata", code: "HG33005", note: "Pressurizado a gás de alta durabilidade" },
+      ];
+      loteAlert = "Celta e Classic usam amortecedor dianteiro com cartucho e suporte de barra estabilizadora específico.";
+      opcionalAlert = "Não acompanha coxins superiores e nem pratos de mola.";
+      falhaAlert = "Batidas secas na dianteira e perda de estabilidade em curvas.";
+      mecanicaAlert = "Fazer o escorvamento (3 a 5 acionamentos completos da haste) antes da fixação da torre.";
+      similarParts = "Cofap GP30061, Nakata HG33005, Monroe SP049.";
+      compPartsList = [
+        "Kit Batente + Coifa Dianteira: Monroe Axios - 044.1120",
+        "Coxim Superior com Rolamento: Sampel - SK210S",
+      ];
+      visualDesc = "Tubo dianteiro preto de fixação McPherson com haste cromada.";
+    }
+  }
+  // FORD KA / FIESTA / ECOSPORT
+  else if (v.includes('ka') || v.includes('fiesta') || v.includes('ecosport')) {
+    if (p.includes('embreagem')) {
+      originalCode = "2S65-7540-AA / 98FU-7540-AB";
+      nakataCode = "LuK 619 3006 00";
+      cobreqCode = "Sachs 6280";
+      extraBrands = [
+        { brand: "Valeo", code: "228185", note: "Kit 190mm com atuador hidráulico" },
+        { brand: "LuK", code: "619 3006 00", note: "Kit RepSet (190mm, 17 estrias)" },
+        { brand: "Sachs", code: "6280", note: "Linha Zetec Rocam 1.0 e 1.6" },
+      ];
+      loteAlert = "Motores Zetec Rocam usam disco de 190mm e 17 estrias. Motores Sigma usam conjunto diferente de 200mm.";
+      opcionalAlert = "Conferir se o kit escolhido já vem com o atuador hidráulico de embreagem incluso (kit com 3 ou 4 peças).";
+      falhaAlert = "Vazamento no atuador hidráulico dentro do câmbio que contamina o disco de embreagem com fluido.";
+      mecanicaAlert = "Trocar OBRIGATORIAMENTE o atuador hidráulico central no câmbio toda vez que trocar o kit de embreagem.";
+      similarParts = "LuK 619 3006 00, Sachs 6280, Valeo 228185.";
+      compPartsList = [
+        "Atuador Hidráulico de Câmbio: LuK - 510006410",
+        "Fluido de Embreagem DOT 4: Bosch - 0986BB0001",
+        "Retentor do Eixo Piloto: Sabó - 02441BRGP",
+      ];
+      visualDesc = "Kit de embreagem com platô de 190mm, disco estriado e atuador concêntrico.";
+    } else if (p.includes('pastilha') || p.includes('freio')) {
+      originalCode = "2S65-2K021-AB";
+      cobreqCode = "N-143";
+      nakataCode = "PW143";
+      extraBrands = [
+        { brand: "Fras-le", code: "PD/50", note: "Sistema ATE / Teves dianteiro" },
+        { brand: "Bosch", code: "0986BB0726", note: "Linha original Ford" },
+      ];
+      loteAlert = "Fiesta e Ka até 2013 usam pastilha sem ranhura de sensor de desgaste.";
+      opcionalAlert = "Pastilha avulsa não acompanha disco de freio nem fluido.";
+      falhaAlert = "Desgaste irregular provocado por engripamento nos pinos deslizantes da pinça.";
+      mecanicaAlert = "Limpar a pinça, engraxar os pinos guia com graxa de silicone neutra e sangrar o sistema.";
+      similarParts = "Cobreq N-143, Fras-le PD/50, Nakata PW143.";
+      compPartsList = [
+        "Disco Dianteiro Sólido: Fremax - BD-2920",
+        "Fluido de Freio DOT 4: Varga - V204",
+      ];
+      visualDesc = "Jogo de 4 pastilhas com orelhas retangulares e garras traseiras.";
+    }
+  }
+  // RENAULT SANDERO / LOGAN / DUSTER / KWID
+  else if (v.includes('sandero') || v.includes('logan') || v.includes('duster') || v.includes('kwid')) {
+    if (p.includes('pastilha') || p.includes('freio')) {
+      originalCode = "410602192R / 410605536R";
+      cobreqCode = "N-448";
+      nakataCode = "PW448";
+      extraBrands = [
+        { brand: "Fras-le", code: "PD/74", note: "Sistema Bosch / Teves" },
+        { brand: "Bosch", code: "0986BB0744", note: "Padrão de montadora Renault" },
+      ];
+      loteAlert = "Modelos 1.0 16V e 1.6 8V podem variar conforme o diâmetro do disco de freio (238mm vs 259mm).";
+      opcionalAlert = "Não inclui molas de retorno em marcas secundárias.";
+      falhaAlert = "Ruído de atrito metálico por desgaste das lonas além do limite de segurança.";
+      mecanicaAlert = "Medir a espessura do disco de freio com micrômetro antes de instalar a pastilha nova.";
+      similarParts = "Cobreq N-448, Fras-le PD/74, Bosch 0986BB0744.";
+      compPartsList = [
+        "Disco de Freio Dianteiro: Fremax - BD-4148",
+        "Fluido DOT 4: Bosch - 0986BB0001",
+      ];
+      visualDesc = "Jogo de pastilhas com perfil curvo simétrico Renault.";
+    } else if (p.includes('embreagem')) {
+      originalCode = "302052341R / 302057505R";
+      nakataCode = "LuK 618 3088 00";
+      cobreqCode = "Valeo 228022";
+      extraBrands = [
+        { brand: "Sachs", code: "6423", note: "Kit 180mm / 200mm linha Renault" },
+        { brand: "LuK", code: "618 3088 00", note: "Kit RepSet para motor 1.0 16V D4D" },
+      ];
+      loteAlert = "Sandero 1.0 16V D4D usa kit de 180mm e 26 estrias. Modelos 1.6 usam 200mm.";
+      opcionalAlert = "Atuador hidráulico de embreagem vendido separadamente.";
+      falhaAlert = "Patinamento da embreagem ao subir aclives em rotação média.";
+      mecanicaAlert = "Trocar o retentor do volante do motor e fazer retífica na face do volante.";
+      similarParts = "Valeo 228022, LuK 618 3088 00, Sachs 6423.";
+      compPartsList = [
+        "Atuador Hidráulico de Câmbio: Valeo - 804527",
+        "Retentor do Volante: Sabó - 05581BRGP",
+      ];
+      visualDesc = "Kit Platô e Disco 180mm com miolo de 26 estrias para câmbio Renault.";
+    }
+  }
+  // TOYOTA COROLLA / ETIOS / YARIS
+  else if (v.includes('corolla') || v.includes('etios') || v.includes('yaris')) {
+    if (p.includes('pastilha') || p.includes('freio')) {
+      originalCode = "04465-02220 / 04465-02390";
+      cobreqCode = "N-1376";
+      nakataCode = "PW1376";
+      extraBrands = [
+        { brand: "Fras-le", code: "PD/1445", note: "Linha Ceramaxx de alta durabilidade" },
+        { brand: "Bosch", code: "0986BB0823", note: "Com chapa anti-ruído original" },
+      ];
+      loteAlert = "Corolla 2008 a 2014 usa pastilha N-1376. Modelos de 2015 em diante usam padrão N-1473.";
+      opcionalAlert = "Não inclui chapas de amortecimento acústico em jogos paralelos.";
+      falhaAlert = "Poeira excessiva nas rodas de liga leve quando utilizada pastilha semi-metálica sem cerâmica.";
+      mecanicaAlert = "Utilizar exclusivamente pastilhas cerâmicas e lubrificar pinos guia com graxa especial.";
+      similarParts = "Cobreq N-1376, Fras-le PD/1445, Bosch 0986BB0823.";
+      compPartsList = [
+        "Disco de Freio Dianteiro Ventilado: Fremax - BD-4220",
+        "Fluido de Freio DOT 5.1 / DOT 4: Bosch - 0986BB0002",
+      ];
+      visualDesc = "Jogo com 4 pastilhas cerâmicas chanfradas com sensores acústicos de desgaste.";
+    }
+  }
+  // HONDA CIVIC / FIT / CITY
+  else if (v.includes('civic') || v.includes('fit') || v.includes('city')) {
+    if (p.includes('pastilha') || p.includes('freio')) {
+      originalCode = "45022-S5A-J00 / 45022-TR0-A00";
+      cobreqCode = "N-1365";
+      nakataCode = "PW1365";
+      extraBrands = [
+        { brand: "Fras-le", code: "PD/689", note: "Padrão de montadora japonesa" },
+        { brand: "Bosch", code: "0986BB0811", note: "Pastilha de cerâmica silenciosa" },
+      ];
+      loteAlert = "Civic G8 (2006 a 2011) usa N-1365 dianteira. Civic G9 (2012 a 2016) usa padrão N-1412.";
+      opcionalAlert = "Não inclui presilhas de aço inox nos modelos mais baratos.";
+      falhaAlert = "Desgaste precoce e trepidação no volante ao frear.";
+      mecanicaAlert = "Medir empenamento do disco com relógio comparador na torre antes da liberação.";
+      similarParts = "Cobreq N-1365, Fras-le PD/689, Bosch 0986BB0811.";
+      compPartsList = [
+        "Disco de Freio Dianteiro: Fremax - BD-4589",
+        "Fluido de Freio DOT 4: Bosch - 0986BB0001",
+      ];
+      visualDesc = "Pastilha com garras e avisador acústico metálico de limite de desgaste.";
+    }
+  }
+  // OUTROS MODELOS: NUNCA GERAR CÓDIGOS ALEATÓRIOS FICTÍCIOS!
   else {
-    originalCode = `Consulte aplicação via chassi na rede autorizada`;
-    nakataCode = `NKT-${Math.floor(1000 + Math.random() * 8000)}`;
-    cobreqCode = `CBQ-${Math.floor(100 + Math.random() * 800)}`;
+    originalCode = `Consulte via Chassi (17 dígitos) na concessionária oficial OEM`;
+    nakataCode = `Consulte catálogo oficial Nakata`;
+    cobreqCode = `Consulte catálogo oficial Cobreq`;
     extraBrands = [
-      { brand: "Bosch", code: `0986BB${Math.floor(1000 + Math.random() * 8000)}`, note: "Qualidade alemã" },
-      { brand: "Cofap / Magneti Marelli", code: `CF-${Math.floor(10000 + Math.random() * 80000)}`, note: "Líder de reposição" },
-      { brand: "Fras-le", code: `PD/${Math.floor(100 + Math.random() * 900)}`, note: "Primeira linha OEM" },
+      { brand: "Bosch Automotive", code: "Consulte catálogo e-Cat Bosch", note: "Verificar aplicação exata por motorização e ano" },
+      { brand: "Schaeffler LuK", code: "Consulte catálogo RepXpert", note: "Consultar diâmetro de disco e número de estrias" },
+      { brand: "Cofap / Magneti Marelli", code: "Consulte catálogo eletrônico Cofap", note: "Verificar código do amortecedor / mola" },
+      { brand: "Fras-le", code: "Consulte catálogo Fras-le", note: "Conferir sistema de pinça e medidas da pastilha" },
     ];
-    montagemNote = `Instalar conforme manual de reparação da montadora para ${params.fullVehicle} ${params.year}. Verificar alinhamento e torque dos parafusos.`;
-    similarParts = `Marcas recomendadas: Nakata, Cobreq, Cofap, Bosch, Mahle e Fras-le.`;
-    compParts = `Verificar componentes periféricos e fixações durante a desmontagem.`;
-    visualDesc = `Componente automotivo com medidas e fixações compatíveis com ${params.fullVehicle}.`;
+    loteAlert = `Para ${params.fullVehicle} ${params.year}, é indispensável checar os 8 últimos dígitos do chassi para verificar a série e motorização exata.`;
+    opcionalAlert = `Confira nos catálogos oficiais os componentes inclusos no kit do fabricante antes de faturar.`;
+    falhaAlert = `Ruídos anormais, folga ou perda de rendimento exigem substituição preventiva imediata.`;
+    mecanicaAlert = `Siga rigorosamente o manual de reparo da montadora para ${params.fullVehicle}, observando torques de aperto e limpeza das sedes.`;
+    similarParts = `Consulte os catálogos oficiais online: Nakata, Cobreq, Schaeffler LuK, Fras-le, Bosch e Cofap.`;
+    compParts = `Verificar componentes periféricos, parafusos de fixação, retentores e fluidos de trabalho durante a montagem.`;
+    visualDesc = `Componente homologado com medidas e tolerâncias de engenharia correspondentes ao modelo ${params.fullVehicle}.`;
   }
 
-  // Construct Markdown
+  // Construct Markdown following the exact 6 sections
   let md = "";
 
   // 1. PERGUNTAS DE CONFIRMAÇÃO
@@ -291,25 +532,32 @@ function generateBalcaoCatalogMarkdown(params: {
   }
   md += "\n";
 
-  // 2. CÓDIGOS DE REFERÊNCIA
-  md += "# 2. CÓDIGOS DE REFERÊNCIA\n";
-  md += `- **Original (Montadora):** \`${originalCode}\`\n`;
+  // 2. ALERTAS TÉCNICOS
+  md += "# 2. ALERTAS TÉCNICOS\n";
+  md += `- **Variação de Lote:** ${loteAlert}\n`;
+  md += `- **Componente Opcional:** ${opcionalAlert}\n`;
+  md += `- **Falha Comum:** ${falhaAlert}\n`;
+  md += `- **Recomendação Mecânica:** ${mecanicaAlert}\n\n`;
+
+  // 3. CÓDIGOS DE REFERÊNCIA
+  md += "# 3. CÓDIGOS DE REFERÊNCIA\n";
+  md += `- **Montadora (${params.brand || 'Original'}):** \`${originalCode}\`\n`;
   md += `- **Nakata:** \`${nakataCode}\`\n`;
   md += `- **Cobreq:** \`${cobreqCode}\`\n`;
   extraBrands.forEach(eb => {
-    md += `- **${eb.brand}:** \`${eb.code}\` - ${eb.note}\n`;
+    md += `- **${eb.brand}:** \`${eb.code}\` (${eb.note})\n`;
   });
   md += "\n";
 
-  // 3. OBSERVAÇÕES TÉCNICAS DE MONTAGEM
-  md += "# 3. OBSERVAÇÕES TÉCNICAS DE MONTAGEM\n";
-  md += `- ${montagemNote}\n`;
-  md += `- Conferir sempre a peça velha no balcão antes de liberar a venda para evitar devolução.\n\n`;
-
   // 4. PEÇAS RELACIONADAS
   md += "# 4. PEÇAS RELACIONADAS\n";
-  md += `- **Similares:** ${similarParts}\n`;
-  md += `- **Complementares para venda casada:** ${compParts}\n\n`;
+  compPartsList.forEach(cp => {
+    md += `- ${cp}\n`;
+  });
+  if (similarParts) {
+    md += `- **Similares recomendadas:** ${similarParts}\n`;
+  }
+  md += "\n";
 
   // 5. IMAGEM DE REFERÊNCIA
   const searchTerm = `${params.part} ${params.fullVehicle} ${params.year} ${nakataCode !== 'HG33000' ? nakataCode : cobreqCode}`.trim();
@@ -317,12 +565,12 @@ function generateBalcaoCatalogMarkdown(params: {
   md += `- **Termo de busca pronto:** "${searchTerm}"\n`;
   md += `- **Descrição visual:** ${visualDesc}\n\n`;
 
-  // 6. ONDE ENCONTRAR (se não tiver em loja)
-  md += "# 6. ONDE ENCONTRAR (se não tiver em loja)\n";
-  md += `- **Disauto Distribuidora (Rio Claro):** Foco em suspensão, freios e motor com pronta entrega local.\n`;
-  md += `- **Pitstop / Rede Âncora (Rio Claro):** Catálogo expresso com entrega rápida por motoboy no balcão.\n`;
-  md += `- **Bezerra Autopeças & Distribuição (Rio Claro):** Amplo estoque de injeção, componentes de ignição e freio.\n`;
-  md += `- **Distribuidora Padre Bento:** Excelente para kits de embreagem, rolamentos e correias.\n`;
+  // 6. ONDE ENCONTRAR (Rio Claro-SP)
+  md += "# 6. ONDE ENCONTRAR (Rio Claro-SP)\n";
+  md += `- **Auto Peças 3R:** Rua 06 A, 1269 - Vila Alemã. Telefone: (19) 3535-4499. Integrante da Rede PitStop, com entrega rápida de balcão.\n`;
+  md += `- **AutoZone Rio Claro:** Av. Presidente Tancredo de Almeida Neves, 535. Telefone fixo: (19) 2111-2750 / WhatsApp Mecânicas: (11) 94078-1966. Amplo estoque local para pronta entrega.\n`;
+  md += `- **Dinâmica Auto Peças:** Avenida 15 JP, 56 - Jardim Esmeralda. Telefone/WhatsApp: (19) 98185-5828. Foco em atendimento rápido regional.\n`;
+  md += `- **Disauto Distribuidora:** Rio Claro-SP. Telefone: (19) 3526-9000. Atacado automotivo com ampla pronta entrega.\n`;
 
   return md;
 }
@@ -438,70 +686,86 @@ app.post("/api/query-part", async (req, res) => {
         if (notes) userPrompt += `- Observações do balcão: ${notes}\n`;
 
         userPrompt += `\nINSTRUÇÃO CRÍTICA DE CONSULTA DE CATÁLOGOS:\n` +
-          `Você DEVE consultar os catálogos oficiais dos fabricantes mencionados (Nakata, Cobreq, Fras-le, Bosch, Cofap, Schaeffler LUK, Monroe, Sabó, Fremax, Gates, Dayco, Continental, Mahle, NGK, SKF) para este veículo e peça.\n` +
-          `Pesquise e traga os códigos REAIS e oficiais de aplicação. Se tiver a ferramenta de busca, use-a para confirmar os códigos nos catálogos digitais.`;
+          `Você DEVE consultar os catálogos oficiais dos fabricantes de 1ª linha (Schaeffler LUK, Sachs, Valeo, Nakata, Cobreq, Fras-le, Bosch, Cofap, Monroe, Sabó, Fremax, Gates, Dayco, Continental, Mahle, NGK, SKF) para este veículo e peça.\n` +
+          `Pesquise e traga os códigos REAIS e oficiais de aplicação usando a busca online.\n` +
+          `Siga RIGOROSAMENTE as 6 seções numeradas (1. PERGUNTAS DE CONFIRMAÇÃO, 2. ALERTAS TÉCNICOS, 3. CÓDIGOS DE REFERÊNCIA, 4. PEÇAS RELACIONADAS, 5. IMAGEM DE REFERÊNCIA, 6. ONDE ENCONTRAR (Rio Claro-SP)).\n` +
+          `Na Seção 2 (ALERTAS TÉCNICOS), inclua obrigatoriamente: Variação de Lote, Componente Opcional, Falha Comum e Recomendação Mecânica.`;
 
         if (answers && Object.keys(answers).length > 0) {
           userPrompt += `\n\nRespostas de triagem já confirmadas pelo cliente no balcão:\n` +
             Object.entries(answers)
               .map(([q, a]) => `- ${q} -> ${a}`)
               .join("\n");
-          userPrompt += `\n\nAGORA QUE VOCÊ TEM A CONFIRMAÇÃO, PESQUISE E TRAGA OS CÓDIGOS EXATOS NA SEÇÃO 2!`;
+          userPrompt += `\n\nAGORA QUE VOCÊ TEM A CONFIRMAÇÃO, PESQUISE E TRAGA OS CÓDIGOS EXATOS NA SEÇÃO 3!`;
         }
 
-        // Multi-tier resilient execution:
-        // Tier 1: Google Gemini 2.5 Flash with Google Search Grounding in official catalogs
-        // Tier 2: Google Gemini 2.5 Flash Direct (fast automotive catalog knowledge)
-        // Tier 3: Senior Counter Clerk Built-in Catalog Engine (Zero downtime)
+        // Multi-tier resilient execution with Google Gemini:
+        // Cascade: gemini-3.5-flash -> gemini-3.8-flash -> gemini-2.5-flash
+        // For each model: First try with Google Search Grounding; if quota 429/timeout occurs,
+        // immediately try direct automotive intelligence (which holds genuine catalog data).
 
         let response: any = null;
-        let aiProvider = "Google Gemini 2.5 Flash • Busca Online em Catálogos Oficiais";
+        let aiProvider = "Google Gemini IA Oficial • Catálogos Automotivos";
+        const candidateModels = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-2.5-flash"];
 
-        // Try Tier 1 (Gemini 2.5 Flash with Google Search in Catalogs)
-        try {
-          console.log("[Balcão] Tier 1: Consultando Google Gemini com Busca em Catálogos Online...");
-          const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout na Busca Online (40s)")), 40000)
-          );
+        for (const targetModel of candidateModels) {
+          if (response?.text && response.text.trim()) break;
 
-          response = await Promise.race([
-            ai.models.generateContent({
-              model: "gemini-2.5-flash",
-              contents: userPrompt,
-              config: {
-                systemInstruction: SYSTEM_INSTRUCTION,
-                temperature: 0.2,
-                tools: [{ googleSearch: {} }],
-              },
-            }),
-            timeoutPromise,
-          ]);
-          aiProvider = "Google Gemini 2.5 Flash • Busca Online em Catálogos Oficiais";
-        } catch (t1Err: any) {
-          console.warn("[Balcão] Tier 1 (Busca Online) indisponível ou timeout:", t1Err?.message || t1Err);
-
-          // Try Tier 2 (Gemini Direct without Search tool - fast 2-3s response from Gemini weights)
+          // Attempt A: with Google Search Grounding in official catalogs
           try {
-            console.log("[Balcão] Tier 2: Consultando Google Gemini Direto...");
-            const timeoutPromise2 = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("Timeout na IA Direta (15s)")), 15000)
+            console.log(`[Balcão] Tentando ${targetModel} com Busca Online em Catálogos...`);
+            const timeoutPromise = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout Busca Online ${targetModel} (10s)`)), 10000)
             );
 
             response = await Promise.race([
               ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: targetModel,
                 contents: userPrompt,
                 config: {
                   systemInstruction: SYSTEM_INSTRUCTION,
                   temperature: 0.2,
+                  tools: [{ googleSearch: {} }],
                 },
               }),
-              timeoutPromise2,
+              timeoutPromise,
             ]);
-            aiProvider = "Google Gemini 2.5 Flash • Inteligência Automotiva Multimarcas";
-          } catch (t2Err: any) {
-            console.warn("[Balcão] Tier 2 (IA Direta) indisponível:", t2Err?.message || t2Err);
-            response = null;
+
+            if (response?.text && response.text.trim()) {
+              aiProvider = `Google Gemini IA (${targetModel}) • Busca Online em Catálogos`;
+              console.log(`[Balcão] Sucesso com ${targetModel} (com Busca Online)!`);
+              break;
+            }
+          } catch (searchErr: any) {
+            console.warn(`[Balcão] ${targetModel} com Busca Online indisponível ou cota 429:`, searchErr?.message || searchErr);
+
+            // Attempt B: Direct without Google Search tool (using rich neural weights on automotive parts)
+            try {
+              console.log(`[Balcão] Tentando ${targetModel} Direto (sem ferramenta)...`);
+              const timeoutPromise2 = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error(`Timeout IA Direta ${targetModel} (10s)`)), 10000)
+              );
+
+              response = await Promise.race([
+                ai.models.generateContent({
+                  model: targetModel,
+                  contents: userPrompt,
+                  config: {
+                    systemInstruction: SYSTEM_INSTRUCTION,
+                    temperature: 0.2,
+                  },
+                }),
+                timeoutPromise2,
+              ]);
+
+              if (response?.text && response.text.trim()) {
+                aiProvider = `Google Gemini IA (${targetModel}) • Inteligência Automotiva Multimarcas`;
+                console.log(`[Balcão] Sucesso com ${targetModel} Direto!`);
+                break;
+              }
+            } catch (directErr: any) {
+              console.warn(`[Balcão] ${targetModel} Direto falhou:`, directErr?.message || directErr);
+            }
           }
         }
 

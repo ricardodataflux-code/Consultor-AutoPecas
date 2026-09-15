@@ -24,6 +24,7 @@ interface QueryFormProps {
   onSubmit: (params: QueryParams) => void;
   isLoading: boolean;
   initialParams?: QueryParams;
+  onNewQuery?: () => void;
 }
 
 const COMMON_PARTS = [
@@ -108,6 +109,7 @@ export const QueryForm: React.FC<QueryFormProps> = ({
   onSubmit,
   isLoading,
   initialParams,
+  onNewQuery,
 }) => {
   // 1. Peça Solicitada
   const [part, setPart] = useState(initialParams?.part || '');
@@ -136,27 +138,68 @@ export const QueryForm: React.FC<QueryFormProps> = ({
   // Observações do Balcão
   const [notes, setNotes] = useState(initialParams?.notes || '');
 
-  // Sync if initialParams changes
-  useEffect(() => {
-    if (initialParams) {
-      setPart(initialParams.part || '');
-      const vSplit = decomposeVehicle(initialParams.brand ? `${initialParams.brand} ${initialParams.model || ''}` : initialParams.vehicle || '');
-      setBrand(initialParams.brand || vSplit.brand);
-      setModel(initialParams.model || vSplit.model);
-      setYear(initialParams.year || '');
+  // Limpeza completa de todos os campos e filtros
+  const handleResetAll = () => {
+    setPart('');
+    setBrand('');
+    setModel('');
+    setYear('');
+    setEngineSize('');
+    setEngineVersion('');
+    setAbs('');
+    setTransmission('');
+    setSteering('');
+    setFuel('');
+    setPosition('');
+    setAirConditioning('');
+    setNotes('');
 
-      const eSplit = decomposeEngine(initialParams.engineSize ? `${initialParams.engineSize} ${initialParams.engineVersion || ''}` : initialParams.engine || '');
-      setEngineSize(initialParams.engineSize || eSplit.engineSize);
-      setEngineVersion(initialParams.engineVersion || eSplit.engineVersion);
-
-      setAbs(initialParams.abs || '');
-      setTransmission(initialParams.transmission || '');
-      setSteering(initialParams.steering || '');
-      setFuel(initialParams.fuel || '');
-      setPosition(initialParams.position || '');
-      setAirConditioning(initialParams.airConditioning || '');
-      setNotes(initialParams.notes || '');
+    if (onNewQuery) {
+      onNewQuery();
     }
+
+    setTimeout(() => {
+      const input = document.getElementById('input-part') as HTMLInputElement | null;
+      if (input) input.focus();
+    }, 50);
+  };
+
+  // Sync if initialParams changes - se vier null/undefined, limpa tudo imediatamente
+  useEffect(() => {
+    if (!initialParams) {
+      setPart('');
+      setBrand('');
+      setModel('');
+      setYear('');
+      setEngineSize('');
+      setEngineVersion('');
+      setAbs('');
+      setTransmission('');
+      setSteering('');
+      setFuel('');
+      setPosition('');
+      setAirConditioning('');
+      setNotes('');
+      return;
+    }
+
+    setPart(initialParams.part || '');
+    const vSplit = decomposeVehicle(initialParams.brand ? `${initialParams.brand} ${initialParams.model || ''}` : initialParams.vehicle || '');
+    setBrand(initialParams.brand || vSplit.brand);
+    setModel(initialParams.model || vSplit.model);
+    setYear(initialParams.year || '');
+
+    const eSplit = decomposeEngine(initialParams.engineSize ? `${initialParams.engineSize} ${initialParams.engineVersion || ''}` : initialParams.engine || '');
+    setEngineSize(initialParams.engineSize || eSplit.engineSize);
+    setEngineVersion(initialParams.engineVersion || eSplit.engineVersion);
+
+    setAbs(initialParams.abs || '');
+    setTransmission(initialParams.transmission || '');
+    setSteering(initialParams.steering || '');
+    setFuel(initialParams.fuel || '');
+    setPosition(initialParams.position || '');
+    setAirConditioning(initialParams.airConditioning || '');
+    setNotes(initialParams.notes || '');
   }, [initialParams]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -245,10 +288,21 @@ export const QueryForm: React.FC<QueryFormProps> = ({
     airConditioning !== '',
   ].filter(Boolean).length;
 
+  const hasAnyData = Boolean(
+    part.trim() ||
+    brand.trim() ||
+    model.trim() ||
+    year.trim() ||
+    engineSize.trim() ||
+    engineVersion.trim() ||
+    notes.trim() ||
+    activeFilterCount > 0
+  );
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 sm:p-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 mb-5 border-b border-slate-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-100">
         <div>
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <Search className="w-4 h-4 text-blue-600" />
@@ -258,12 +312,28 @@ export const QueryForm: React.FC<QueryFormProps> = ({
             Preenchimento em lista vertical com filtros de múltipla escolha para triagem instantânea.
           </p>
         </div>
-        {activeFilterCount > 0 && (
-          <span className="self-start sm:self-auto inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            <SlidersHorizontal className="w-3 h-3" />
-            {activeFilterCount} {activeFilterCount === 1 ? 'filtro selecionado' : 'filtros selecionados'}
-          </span>
-        )}
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {activeFilterCount > 0 && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+              <SlidersHorizontal className="w-3 h-3" />
+              {activeFilterCount} {activeFilterCount === 1 ? 'filtro' : 'filtros'}
+            </span>
+          )}
+
+          {hasAnyData && (
+            <button
+              id="btn-form-new-query"
+              type="button"
+              onClick={handleResetAll}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-300 hover:border-rose-300 text-xs font-semibold transition-all shadow-2xs active:scale-95"
+              title="Limpar todos os campos e filtros para nova consulta (Esc)"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+              <span>Nova Consulta (Limpar)</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Main Form - Vertical List Layout */}
@@ -822,25 +892,41 @@ export const QueryForm: React.FC<QueryFormProps> = ({
             </span>
           </div>
 
-          <button
-            id="btn-submit-query"
-            type="submit"
-            disabled={isLoading || !part.trim() || (!model.trim() && !brand.trim())}
-            className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 disabled:cursor-not-allowed active:scale-[0.98]"
-          >
-            {isLoading ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                <span>IA do Google Consultando Catálogos...</span>
-              </>
-            ) : (
-              <>
-                <Search className="w-4 h-4" />
-                <span>Pesquisar com IA do Google nos Catálogos</span>
-                <ChevronRight className="w-4 h-4" />
-              </>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {hasAnyData && (
+              <button
+                id="btn-form-clear-bottom"
+                type="button"
+                onClick={handleResetAll}
+                disabled={isLoading}
+                className="w-full sm:w-auto px-4 py-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 hover:border-rose-300 text-slate-700 hover:text-rose-700 font-semibold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 disabled:opacity-50"
+                title="Limpar todos os campos e filtros para nova consulta (Esc)"
+              >
+                <RotateCcw className="w-4 h-4 text-slate-500" />
+                <span>Limpar Tudo</span>
+              </button>
             )}
-          </button>
+
+            <button
+              id="btn-submit-query"
+              type="submit"
+              disabled={isLoading || !part.trim() || (!model.trim() && !brand.trim())}
+              className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 disabled:cursor-not-allowed active:scale-[0.98]"
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                  <span>IA do Google Consultando Catálogos...</span>
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4" />
+                  <span>Pesquisar com IA do Google nos Catálogos</span>
+                  <ChevronRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </form>
 

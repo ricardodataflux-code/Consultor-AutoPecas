@@ -124,27 +124,80 @@ export function parseSeniorClerkMarkdown(
       }
     }
 
-    // 3. Alertas técnicos
-    else if (/^3\.\s+ALERTAS TÉCNICOS/i.test(trimmed)) {
+    // 2 or 3. Alertas técnicos (flexível de ordem)
+    else if (/ALERTAS TÉCNICOS|ALERTAS TECNICOS/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
+      if (!result.structuredAlerts) {
+        result.structuredAlerts = [];
+      }
       for (const line of lines) {
         const clean = line.replace(/^\s*[-*•]\s*/, '').replace(/\*\*/g, '').trim();
-        if (clean) {
-          result.technicalAlerts.push(clean);
+        if (!clean) continue;
+        result.technicalAlerts.push(clean);
+
+        // Classify structured alert
+        let alertType: 'lote' | 'opcional' | 'falha' | 'mecanica' | 'geral' = 'geral';
+        let alertTitle = 'Alerta Técnico';
+        let alertDesc = clean;
+
+        const colonIdx = clean.indexOf(':');
+        if (colonIdx > 0 && colonIdx < 35) {
+          const prefix = clean.substring(0, colonIdx).trim().toLowerCase();
+          alertDesc = clean.substring(colonIdx + 1).trim();
+
+          if (prefix.includes('lote') || prefix.includes('varia')) {
+            alertType = 'lote';
+            alertTitle = 'Variação de Lote / Ano';
+          } else if (prefix.includes('opcional') || prefix.includes('inclus') || prefix.includes('acompanha')) {
+            alertType = 'opcional';
+            alertTitle = 'Componente Opcional / Inclusões';
+          } else if (prefix.includes('falha') || prefix.includes('comum') || prefix.includes('defeito') || prefix.includes('sintoma')) {
+            alertType = 'falha';
+            alertTitle = 'Falha Comum no Modelo';
+          } else if (prefix.includes('mecânica') || prefix.includes('mecanica') || prefix.includes('recomenda') || prefix.includes('montagem')) {
+            alertType = 'mecanica';
+            alertTitle = 'Recomendação Mecânica / Garantia';
+          } else {
+            alertTitle = clean.substring(0, colonIdx).trim();
+          }
+        } else {
+          const lower = clean.toLowerCase();
+          if (lower.includes('lote') || lower.includes('estria') || lower.includes('diâmetro') || lower.includes('diametro')) {
+            alertType = 'lote';
+            alertTitle = 'Variação de Lote / Medidas';
+          } else if (lower.includes('não acompanha') || lower.includes('opcional') || lower.includes('atuador')) {
+            alertType = 'opcional';
+            alertTitle = 'Componente Opcional';
+          } else if (lower.includes('falha') || lower.includes('pedal duro') || lower.includes('trepida')) {
+            alertType = 'falha';
+            alertTitle = 'Falha Comum';
+          } else if (lower.includes('volante') || lower.includes('passe') || lower.includes('sangria') || lower.includes('torque')) {
+            alertType = 'mecanica';
+            alertTitle = 'Recomendação Mecânica';
+          }
         }
+
+        result.structuredAlerts.push({
+          type: alertType,
+          title: alertTitle,
+          description: alertDesc,
+        });
       }
     }
 
     // 4. Peças relacionadas
-    else if (/^4\.\s+PEÇAS RELACIONADAS/i.test(trimmed)) {
+    else if (/PEÇAS RELACIONADAS|PECAS RELACIONADAS/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
-      let subMode: 'similars' | 'complementary' = 'similars';
+      if (!result.relatedParts.structuredItems) {
+        result.relatedParts.structuredItems = [];
+      }
+      let subMode: 'similars' | 'complementary' = 'complementary';
 
       for (const line of lines) {
         const clean = line.trim();
         if (/similar/i.test(clean)) {
           subMode = 'similars';
-        } else if (/complementar|trocad|junto|kit/i.test(clean)) {
+        } else if (/complementar|trocad|junto|kit|venda casada/i.test(clean)) {
           subMode = 'complementary';
         }
 
@@ -154,6 +207,34 @@ export function parseSeniorClerkMarkdown(
             result.relatedParts.similars.push(bullet);
           } else {
             result.relatedParts.complementary.push(bullet);
+          }
+
+          // Structured extraction of related component, brand and code
+          // Example: "Atuador Hidráulico de Embreagem (Pedal): LuK - 511012710"
+          const colonMatch = bullet.match(/^([^:]+):\s*(.+)$/);
+          if (colonMatch) {
+            const comp = colonMatch[1].trim();
+            const rest = colonMatch[2].trim();
+            const dashMatch = rest.match(/^([^-–—]+)\s*[-–—]\s*(.+)$/);
+            if (dashMatch) {
+              result.relatedParts.structuredItems.push({
+                component: comp,
+                brand: dashMatch[1].trim(),
+                code: dashMatch[2].trim(),
+                fullText: bullet,
+              });
+            } else {
+              result.relatedParts.structuredItems.push({
+                component: comp,
+                fullText: bullet,
+                code: rest,
+              });
+            }
+          } else {
+            result.relatedParts.structuredItems.push({
+              component: bullet,
+              fullText: bullet,
+            });
           }
         }
       }
@@ -206,8 +287,10 @@ export function parseSeniorClerkMarkdown(
   // Ensure default Rio Claro suppliers list if none detected
   if (result.suppliersRioClaro.length === 0) {
     result.suppliersRioClaro = [
-      'Distribuidoras e atacados locais de Rio Claro-SP (Pellegrino, Garcia Autopeças, Bezerra, Pit Stop Rio Claro)',
-      'Consulte entrega expressa via motoboy para oficinas mecânicas de Rio Claro e região',
+      'Auto Peças 3R: Rua 06 A, 1269 - Vila Alemã. Telefone: (19) 3535-4499. Integrante da Rede PitStop, com entrega rápida de balcão.',
+      'AutoZone Rio Claro: Av. Presidente Tancredo de Almeida Neves, 535. Telefone fixo: (19) 2111-2750 / WhatsApp Mecânicas: (11) 94078-1966. Amplo estoque local para pronta entrega.',
+      'Dinâmica Auto Peças: Avenida 15 JP, 56 - Jardim Esmeralda. Telefone/WhatsApp: (19) 98185-5828. Foco em atendimento rápido regional.',
+      'Disauto Distribuidora (Rio Claro): Atacado de autopeças com entrega rápida para balcão e oficinas.',
     ];
   }
 

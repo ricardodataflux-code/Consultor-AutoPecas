@@ -39,6 +39,19 @@ export interface OfficialCatalogPortal {
   badge: string;
 }
 
+export interface ParsedAlertItem {
+  type: 'lote' | 'opcional' | 'falha' | 'mecanica' | 'geral';
+  title: string;
+  description: string;
+}
+
+export interface ParsedRelatedItem {
+  component: string;
+  brand?: string;
+  code?: string;
+  fullText: string;
+}
+
 export interface QueryResult {
   id: string;
   timestamp: number;
@@ -48,9 +61,11 @@ export interface QueryResult {
   confirmationQuestions: string[];
   codes: ParsedCodeItem[];
   technicalAlerts: string[];
+  structuredAlerts?: ParsedAlertItem[];
   relatedParts: {
     similars: string[];
     complementary: string[];
+    structuredItems?: ParsedRelatedItem[];
   };
   visualInspection: {
     searchTerm: string;

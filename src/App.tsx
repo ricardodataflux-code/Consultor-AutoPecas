@@ -17,6 +17,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Consultando catálogos...');
   const [error, setError] = useState<string | null>(null);
+  const [formResetKey, setFormResetKey] = useState(0);
 
   // Modals & Drawers
   const [isBrandsModalOpen, setIsBrandsModalOpen] = useState(false);
@@ -170,8 +171,29 @@ export default function App() {
     setActiveResult(null);
     setActiveParams(null);
     setError(null);
+    setFormResetKey((prev) => prev + 1);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Focar no primeiro campo para atendimento imediato
+    setTimeout(() => {
+      const input = document.getElementById('input-part') as HTMLInputElement | null;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 60);
   };
+
+  // Atalho de teclado global Esc para Nova Consulta limpa
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isBrandsModalOpen && !isSuppliersModalOpen && !isHistoryDrawerOpen) {
+        handleNewQuery();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isBrandsModalOpen, isSuppliersModalOpen, isHistoryDrawerOpen]);
 
   const handleSelectFromHistory = (result: QueryResult) => {
     setActiveParams(result.query);
@@ -214,9 +236,11 @@ export default function App() {
         {/* Query Input Section */}
         <section id="section-query-form">
           <QueryForm
+            key={formResetKey}
             onSubmit={handleFormSubmit}
             isLoading={isLoading}
             initialParams={activeParams || undefined}
+            onNewQuery={handleNewQuery}
           />
         </section>
 
@@ -253,6 +277,7 @@ export default function App() {
               onAnswerConfirmations={handleAnswerConfirmations}
               onQueryRelatedPart={handleQueryRelatedPart}
               isLoading={isLoading}
+              onNewQuery={handleNewQuery}
             />
           </section>
         )}
