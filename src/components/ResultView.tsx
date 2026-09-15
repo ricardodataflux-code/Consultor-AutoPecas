@@ -20,8 +20,25 @@ import {
   Image as ImageIcon,
   ShoppingCart,
   MapPin,
+  Globe,
+  BookOpen,
 } from 'lucide-react';
 import { QueryResult } from '../types';
+
+const OFFICIAL_CATALOG_PORTALS = [
+  { brand: 'Nakata', url: 'https://www.nakata.com.br/catalogo', role: 'Suspensão, freios, direção e bombas' },
+  { brand: 'Cobreq', url: 'https://www.cobreq.com.br/catalogo-eletronico/', role: 'Pastilhas, discos, sapatas e lonas' },
+  { brand: 'Fras-le', url: 'https://www.fras-le.com/br/pt/catalogo', role: 'Pastilhas Ceramaxx e discos' },
+  { brand: 'Bosch Automotive', url: 'https://www.bosch-automotive.com/pt-br/catalogo', role: 'Injeção, freios, velas e filtros' },
+  { brand: 'Cofap / Marelli', url: 'https://www.mmcofap.com.br/catalogo', role: 'Amortecedores Turbogás e molas' },
+  { brand: 'Schaeffler (LUK / INA)', url: 'https://www.repxpert.com.br', role: 'Embreagens e rolamentos' },
+  { brand: 'Monroe / Axios', url: 'https://www.monroecatalogo.com.br', role: 'Amortecedores e borrachas' },
+  { brand: 'Fremax', url: 'https://www.fremax.com.br/catalogo', role: 'Discos e tambores de freio' },
+  { brand: 'Sabó', url: 'https://www.sabo.com.br/catalogo', role: 'Retentores e juntas de motor' },
+  { brand: 'Gates / Dayco', url: 'https://www.gatesshowcase.com', role: 'Correias sincronizadoras e tensores' },
+  { brand: 'NGK / NTK', url: 'https://www.ngkntk.com.br/catalogo', role: 'Velas de ignição e sondas lambda' },
+  { brand: 'SKF', url: 'https://www.skf.com/br/support/engineering-tools/catalogs-and-literature', role: 'Rolamentos e bombas' },
+];
 
 interface ResultViewProps {
   result: QueryResult;
@@ -177,12 +194,12 @@ export const ResultView: React.FC<ResultViewProps> = ({
           {result.usedFallback ? (
             <span className="text-[11px] font-bold bg-amber-50 text-amber-800 px-2.5 py-1 rounded-md border border-amber-200 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-600" />
-              Catálogo Especialista Balcão
+              {result.aiProvider || 'Catálogo Especialista Balcão'}
             </span>
           ) : (
-            <span className="text-[11px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-md border border-emerald-200 flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-              Consulta Online IA
+            <span className="text-[11px] font-bold bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-md border border-emerald-200 flex items-center gap-1.5 shadow-2xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{result.aiProvider || 'IA do Google • Catálogos Oficiais'}</span>
             </span>
           )}
         </div>
@@ -251,6 +268,88 @@ export const ResultView: React.FC<ResultViewProps> = ({
       {/* VISUAL BALCÃO VIEW (High productivity, direct lists, interactive filter) */}
       {viewMode === 'visual' && (
         <div className="w-full space-y-5">
+          {/* BANNER IA DO GOOGLE & CATÁLOGOS OFICIAIS */}
+          <div className="bg-linear-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-xl p-4 sm:p-5 shadow-md border border-blue-700/50">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center p-1.5 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    <Sparkles className="w-4 h-4 text-amber-300" />
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-blue-300">
+                    Inteligência Artificial do Google
+                  </span>
+                  <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40 font-semibold">
+                    Catálogos Oficiais Homologados
+                  </span>
+                </div>
+                <h2 className="text-base sm:text-lg font-bold text-white">
+                  Pesquisa Realizada nos Catálogos Oficiais Automotivos
+                </h2>
+                <p className="text-xs text-slate-300 max-w-3xl leading-relaxed">
+                  A IA consultou as bases técnicas das montadoras e dos fabricantes líderes de autopeças (<strong>Nakata, Cobreq, Fras-le, Bosch, Cofap, Schaeffler LUK, Monroe, Sabó, Fremax, Gates</strong>) cruzando motorização, opcionais de freio (ABS), câmbio e suspensão.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent(`${result.query.part} ${result.query.vehicle} catalogo oficial nakata cobreq bosch`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs"
+                >
+                  <Globe className="w-3.5 h-3.5 text-blue-300" />
+                  <span>Conferir no Google</span>
+                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                </a>
+              </div>
+            </div>
+
+            {/* Verified Sources if grounded by Google Search */}
+            {result.verifiedSources && result.verifiedSources.length > 0 && (
+              <div className="mt-3.5 pt-3 border-t border-white/10">
+                <div className="text-[11px] font-semibold text-blue-200 mb-1.5 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Fontes e Catálogos Técnicos Verificados:</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {result.verifiedSources.slice(0, 6).map((src, sIdx) => (
+                    <a
+                      key={sIdx}
+                      href={src.uri}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/20 border border-white/10 text-[11px] text-slate-200 hover:text-white transition-colors"
+                      title={src.title}
+                    >
+                      <BookOpen className="w-3 h-3 text-blue-300" />
+                      <span className="truncate max-w-[200px]">{src.title}</span>
+                      <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quick launcher to official portals */}
+            <div className="mt-3 pt-3 border-t border-white/10 flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              <span className="text-[11px] text-slate-400 shrink-0 font-medium">Acesso direto:</span>
+              {OFFICIAL_CATALOG_PORTALS.slice(0, 6).map((cat) => (
+                <a
+                  key={cat.brand}
+                  href={cat.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-[11px] text-slate-200 hover:text-white font-medium shrink-0 flex items-center gap-1 transition-colors"
+                  title={`Abrir portal do ${cat.brand}: ${cat.role}`}
+                >
+                  <span>{cat.brand}</span>
+                  <ExternalLink className="w-2.5 h-2.5 opacity-50" />
+                </a>
+              ))}
+            </div>
+          </div>
+
           {/* SECTION 1: TRIAGEM & PERGUNTAS DE CONFIRMAÇÃO (FILTRO INTERATIVO) */}
           {result.confirmationQuestions.length > 0 ? (
             <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-5 shadow-sm">

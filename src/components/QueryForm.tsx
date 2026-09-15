@@ -816,9 +816,9 @@ export const QueryForm: React.FC<QueryFormProps> = ({
         {/* SUBMIT BUTTON BAR */}
         <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-xs text-slate-600">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-xs"></span>
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-xs animate-pulse"></span>
             <span>
-              A IA pesquisará nos catálogos oficiais online aplicando todos os filtros selecionados acima.
+              A <strong>IA do Google</strong> pesquisará nos catálogos oficiais (Nakata, Cobreq, Fras-le, Bosch, Cofap, LUK...) aplicando todos os filtros selecionados.
             </span>
           </div>
 
@@ -826,17 +826,17 @@ export const QueryForm: React.FC<QueryFormProps> = ({
             id="btn-submit-query"
             type="submit"
             disabled={isLoading || !part.trim() || (!model.trim() && !brand.trim())}
-            className="w-full sm:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 disabled:cursor-not-allowed active:scale-[0.98]"
+            className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 disabled:cursor-not-allowed active:scale-[0.98]"
           >
             {isLoading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                <span>IA Consultando Catálogos Online...</span>
+                <span>IA do Google Consultando Catálogos...</span>
               </>
             ) : (
               <>
                 <Search className="w-4 h-4" />
-                <span>Pesquisar por IA nos Catálogos Online</span>
+                <span>Pesquisar com IA do Google nos Catálogos</span>
                 <ChevronRight className="w-4 h-4" />
               </>
             )}

@@ -61,6 +61,7 @@ export interface QueryResult {
   officialCatalogs?: OfficialCatalogPortal[];
   usedFallback?: boolean;
   quotaExceeded?: boolean;
+  aiProvider?: string;
 }
 
 export interface VehiclePreset {

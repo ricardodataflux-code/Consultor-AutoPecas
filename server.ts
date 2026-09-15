@@ -28,39 +28,61 @@ function getGeminiClient(): GoogleGenAI {
   return aiClient;
 }
 
-const SYSTEM_INSTRUCTION = `Aja como um balconista sênior, especialista em autopeças e catálogos automotivos (TecDoc, SBS, catálogos de fabricante), com foco em fechar vendas rápidas e assertivas no balcão e por telefone.
+const SYSTEM_INSTRUCTION = `Você é um balconista sênior especialista em autopeças brasileiras e catálogos automotivos oficiais.
+Você atua com foco em fechar vendas rápidas, assertivas e 100% corretas no balcão e por telefone.
 
-REGRA DE TRIAGEM (antes de responder):
-Sempre que eu informar peça + modelo + ano, verifique se esses dados são suficientes para identificar a aplicação exata.
-- Se houver mais de uma motorização/versão possível para esse modelo/ano, NÃO chute: primeiro liste as "Perguntas de Confirmação" e peça para eu responder antes de fechar os códigos.
-- Só pule direto para os códigos se o modelo/ano/motor já for suficiente para aplicação única.
+CATÁLOGOS OFICIAIS DE REFERÊNCIA QUE VOCÊ DEVE CONSULTAR E CRUZAR CÓDIGOS:
+- NAKATA: Suspensão, amortecedores, pivôs, terminais de direção e axiais, bieletas, juntas homocinéticas, bombas d'água.
+- COBREQ: Freios, pastilhas dianteiras e traseiras, sapatas, lonas, fluidos de freio.
+- FRAS-LE: Pastilhas Ceramaxx/Lonaflex, discos e tambores de freio.
+- BOSCH AUTOMOTIVE BRASIL: Injeção eletrônica, velas de ignição, cabos, bobinas, filtros, freios, bombas de combustível.
+- COFAP / MAGNETI MARELLI: Amortecedores Turbogás/Super, molas, bandejas, pastilhas.
+- MONROE & MONROE AXIOS: Amortecedores OESpectrum/Gas Premium, kits de batente, coxins, buchas de suspensão.
+- SCHAEFFLER (LUK / INA / FAG): Kits de embreagem Repxpert, rolamentos de roda, atuadores, tensores de correia.
+- ZF AFTERMARKET (SACHS / LEMFÖRDER): Kits de embreagem, amortecedores, componentes de direção.
+- FREMAX: Discos de freio de carbono, tambores.
+- SABÓ: Retentores, juntas de motor, mangueiras, guarnições.
+- GATES / DAYCO / CONTINENTAL CONTITECH: Correias dentadas sincronizadoras, kits sincronizadores, correias Poly-V, tensores.
+- MAHLE / METAL LEVE: Filtros, anéis de segmento, pistões, bronzinas.
+- NGK / NTK: Velas de ignição Green/G-Power/Laser Iridium, cabos supressores, sensores de oxigênio (sonda lambda).
+- SKF: Rolamentos e cubos de roda, bombas d'água, tensores.
+- URBA / BROSOL / SCHADEK: Bombas d'água, bombas de combustível mecânicas e elétricas, bombas de óleo.
+- VALCLEI / WAHLER / IGUAÇU: Válvulas termostáticas, carcaças de água, sensores de temperatura.
+- SYL / TECPADS: Pastilhas de freio para veículos nacionais e importados.
+- TECFIL / WEGA: Filtros de óleo, combustível, ar do motor e ar-condicionado/cabine.
 
-Quando eu confirmar os dados, responda SEMPRE em tópicos curtos, sem introdução, sem explicações longas — preciso ler em segundos com o cliente esperando. Formate em Markdown com os títulos exatos abaixo (MANTENHA OS NÚMEROS "1.", "2." antes dos títulos, é obrigatório para o sistema ler), nesta ordem:
+REGRA DE TRIAGEM:
+- Se as informações fornecidas (marca, modelo, ano, motor, versão, ABS, câmbio, direção) já definirem uma aplicação técnica única, NÃO faça perguntas desnecessárias: vá direto aos códigos na Seção 2!
+- Se faltar algo crítico que mude a peça (ex: se o usuário não indicou se tem ABS para uma pastilha de Onix que muda com/sem ABS), liste as perguntas na Seção 1.
 
-1. PERGUNTAS DE CONFIRMAÇÃO
-Liste apenas o que muda a peça (motor, combustível, câmbio, ABS, direção hidráulica/elétrica, versão/linha, posição — dianteira/traseira, lado esquerdo/direito). Máximo 5 perguntas.
+FORMATO OBRIGATÓRIO DE RESPOSTA (Mantenha os números "1.", "2." exatamente antes dos títulos):
 
-2. CÓDIGOS DE REFERÊNCIA
-- Código original (montadora), se souber.
-- Códigos das principais marcas de reposição compatíveis com a peça pedida (use apenas as marcas relevantes para a categoria da peça — não liste marca de amortecedor para vela, por exemplo). Marcas de referência: LUK, Valeo, Sachs, Nakata, Monroe, Bosch, NGK, SKF, DS, COFAP, CONTINENTAL, DAYCO, DISAUTO, FAMA, FANIA, GATES, FLORIO, IGUAÇU, IMA, JAHU, MOBENSANI, KYB, MAHLE, THOMSON, VISCONDE, TSA, URBA, VALCLEI, ZF AFTERMARKET, VETOR, SCHADEK, BROSOL, JAMAICA, NOVO KIT, NK, DPL, TECFIL, SABO, TARANTO, MAGNETI MARELLI, SYL, COBREQ, TECPADS, WAHLER.
-- Se não tiver certeza de um código, avise "verificar no sistema" em vez de inventar.
+# 1. PERGUNTAS DE CONFIRMAÇÃO
+(Se houver dúvidas técnicas, liste no máximo 3 a 5 perguntas objetivas. Se todas as características já tiverem sido confirmadas, declare: "- Nenhuma pendência técnica. Aplicação fechada para [Veículo/Ano/Motor].")
 
-3. ALERTAS TÉCNICOS
-Observações rápidas de aplicação: peça vendida em par/kit, necessidade de peça complementar (ex: rolamento junto com amortecedor), falhas comuns dessa aplicação, ou variações que mudam o código entre lotes/anos.
+# 2. CÓDIGOS DE REFERÊNCIA
+- **Original (Montadora):** [Código OEM da montadora, se houver]
+- **Nakata:** [Código Nakata]
+- **Cobreq:** [Código Cobreq]
+- **[Outra Marca 1]:** [Código] - [Breve descrição ou aplicação]
+- **[Outra Marca 2]:** [Código] - [Breve descrição]
+(Liste as marcas líderes compatíveis com a peça solicitada, ex: Fras-le, Bosch, Cofap, LUK, Monroe, etc.)
 
-4. PEÇAS RELACIONADAS
-- Similares (mesma aplicação, outras marcas/qualidade — original, primeira linha, segunda linha).
-- Peças complementares comumente trocadas junto (ex: comprou amortecedor → sugerir kit de batente e coifa).
+# 3. OBSERVAÇÕES TÉCNICAS DE MONTAGEM
+(Dicas práticas de oficina: escorvamento de amortecedor, torque, sangria, troca de fluido, limpeza de disco, etc.)
 
-5. IMAGEM DE REFERÊNCIA
-- Se você tiver ferramenta de busca de imagem/internet ativada, busque e traga uma foto real da peça correspondente ao código listado, para eu comparar visualmente com o cliente.
-- Se não tiver acesso à internet, gere o termo de busca pronto (ex: "amortecedor dianteiro Nakata NF3007 Onix 2015") para eu colar direto no Google Imagens ou no site do fornecedor.
-- Em ambos os casos, descreva rapidamente o formato/cor/conectores da peça como apoio.
+# 4. PEÇAS RELACIONADAS
+- **Similares:** [Marcas alternativas de reposição]
+- **Complementares para venda casada:** [Itens que devem ser trocados juntos para garantir a garantia, ex: batentes para amortecedor, discos para pastilha]
 
-6. ONDE ENCONTRAR (se não tiver em loja)
-Sugira fornecedores/distribuidoras de autopeças localizadas em Rio Claro-SP como alternativa, priorizando quem normalmente tem entrega rápida. Não sugira fornecedores de outras cidades.
+# 5. IMAGEM DE REFERÊNCIA
+- **Termo de busca pronto:** "[Nome da peça] [Marca da peça] [Código da peça] [Carro e Ano]"
+- **Descrição visual:** [Descreva o formato físico, número de furos/estrias, orelhas, conectores ou aspecto visual para o balconista conferir na mão]
 
-TOM: direto, técnico, sem enrolação. Nunca responda com texto corrido fora dos tópicos acima.`;
+# 6. ONDE ENCONTRAR (se não tiver em loja)
+Sugira fornecedores/distribuidoras de autopeças de Rio Claro-SP com entrega rápida de balcão (Disauto Distribuidora Rio Claro, Pitstop / Rede Âncora Rio Claro, Bezerra Autopeças Rio Claro, Distribuidora Padre Bento).
+
+TOM: direto, técnico, sem enrolação.`;
 
 function generateBalcaoCatalogMarkdown(params: {
   fullVehicle: string;
@@ -415,7 +437,9 @@ app.post("/api/query-part", async (req, res) => {
 
         if (notes) userPrompt += `- Observações do balcão: ${notes}\n`;
 
-        userPrompt += `\nINSTRUÇÃO CRÍTICA: Você DEVE usar a ferramenta de Busca do Google AGORA para consultar catálogos oficiais (ex: NGK, Bosch, Nakata, etc) na internet para ESTE veículo exato. Não tente adivinhar. Pesquise e traga os códigos REAIS de aplicação. Use o bloco <thinking> no início para mostrar os termos que você pesquisou e o raciocínio.`;
+        userPrompt += `\nINSTRUÇÃO CRÍTICA DE CONSULTA DE CATÁLOGOS:\n` +
+          `Você DEVE consultar os catálogos oficiais dos fabricantes mencionados (Nakata, Cobreq, Fras-le, Bosch, Cofap, Schaeffler LUK, Monroe, Sabó, Fremax, Gates, Dayco, Continental, Mahle, NGK, SKF) para este veículo e peça.\n` +
+          `Pesquise e traga os códigos REAIS e oficiais de aplicação. Se tiver a ferramenta de busca, use-a para confirmar os códigos nos catálogos digitais.`;
 
         if (answers && Object.keys(answers).length > 0) {
           userPrompt += `\n\nRespostas de triagem já confirmadas pelo cliente no balcão:\n` +
@@ -426,50 +450,55 @@ app.post("/api/query-part", async (req, res) => {
         }
 
         // Multi-tier resilient execution:
-        // Tier 1: Gemini with Google Search Grounding
-        // Tier 2: Gemini Direct (without search tools, fast catalog knowledge, no search quota cost)
+        // Tier 1: Google Gemini 2.5 Flash with Google Search Grounding in official catalogs
+        // Tier 2: Google Gemini 2.5 Flash Direct (fast automotive catalog knowledge)
         // Tier 3: Senior Counter Clerk Built-in Catalog Engine (Zero downtime)
 
         let response: any = null;
+        let aiProvider = "Google Gemini 2.5 Flash • Busca Online em Catálogos Oficiais";
 
-        // Try Tier 1 (with Google Search)
+        // Try Tier 1 (Gemini 2.5 Flash with Google Search in Catalogs)
         try {
+          console.log("[Balcão] Tier 1: Consultando Google Gemini com Busca em Catálogos Online...");
           const timeoutPromise = new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout na Busca Online")), 18000)
+            setTimeout(() => reject(new Error("Timeout na Busca Online (40s)")), 40000)
           );
 
           response = await Promise.race([
             ai.models.generateContent({
-              model: "gemini-flash-latest",
+              model: "gemini-2.5-flash",
               contents: userPrompt,
               config: {
                 systemInstruction: SYSTEM_INSTRUCTION,
-                temperature: 0.3,
+                temperature: 0.2,
                 tools: [{ googleSearch: {} }],
               },
             }),
             timeoutPromise,
           ]);
+          aiProvider = "Google Gemini 2.5 Flash • Busca Online em Catálogos Oficiais";
         } catch (t1Err: any) {
           console.warn("[Balcão] Tier 1 (Busca Online) indisponível ou timeout:", t1Err?.message || t1Err);
 
-          // Try Tier 2 (Gemini Direct without Search tool)
+          // Try Tier 2 (Gemini Direct without Search tool - fast 2-3s response from Gemini weights)
           try {
+            console.log("[Balcão] Tier 2: Consultando Google Gemini Direto...");
             const timeoutPromise2 = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error("Timeout na IA Direta")), 15000)
+              setTimeout(() => reject(new Error("Timeout na IA Direta (15s)")), 15000)
             );
 
             response = await Promise.race([
               ai.models.generateContent({
-                model: "gemini-flash-latest",
+                model: "gemini-2.5-flash",
                 contents: userPrompt,
                 config: {
                   systemInstruction: SYSTEM_INSTRUCTION,
-                  temperature: 0.3,
+                  temperature: 0.2,
                 },
               }),
               timeoutPromise2,
             ]);
+            aiProvider = "Google Gemini 2.5 Flash • Inteligência Automotiva Multimarcas";
           } catch (t2Err: any) {
             console.warn("[Balcão] Tier 2 (IA Direta) indisponível:", t2Err?.message || t2Err);
             response = null;
@@ -497,6 +526,7 @@ app.post("/api/query-part", async (req, res) => {
           // Tier 3: High-precision Senior Clerk Catalog Generator (Zero downtime)
           console.log("[Balcão] Ativando Catálogo Técnico Especialista Balcão (Tier 3)...");
           usedFallback = true;
+          aiProvider = "Catálogo Técnico de Balcão (Standby)";
           markdown = generateBalcaoCatalogMarkdown({
             fullVehicle,
             brand: brand || '',
@@ -559,9 +589,10 @@ app.post("/api/query-part", async (req, res) => {
 
     res.json({
       markdown,
-      usedFallback: false,
-      isQuotaExceeded: false,
+      usedFallback,
+      isQuotaExceeded,
       verifiedSources,
+      aiProvider: usedFallback ? "Catálogo Técnico Especialista Balcão" : "Google Gemini IA",
     });
   } catch (err: any) {
     console.error("[Balcão Autopeças] Erro geral ao processar consulta:", err);

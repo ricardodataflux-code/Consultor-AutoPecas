@@ -45,17 +45,16 @@ export default function App() {
   useEffect(() => {
     if (!isLoading) return;
     const messages = [
-      'IA consultando os catálogos eletrônicos oficiais online...',
-      'Cruzando catálogos dos fabricantes (Nakata, COFAP, Monroe, Bosch, LUK, Cobreq)...',
-      'Identificando aplicação técnica, motorização e código original (OEM)...',
-      'Localizando códigos exatos de reposição e referências cruzadas...',
-      'Verificando alertas de montagem, pares e fornecedores em Rio Claro-SP...',
+      'IA do Google conectando e pesquisando nos catálogos oficiais...',
+      'Consultando catálogos de fabricantes (Nakata, Cobreq, Fras-le, Bosch, Cofap, LUK, Monroe)...',
+      'Identificando aplicação exata para o veículo, motorização e opcionais selecionados...',
+      'Cruzando códigos originais OEM com peças de 1ª linha e fornecedores...',
     ];
     let idx = 0;
     const interval = setInterval(() => {
       idx = (idx + 1) % messages.length;
       setLoadingMessage(messages[idx]);
-    }, 2000);
+    }, 2200);
 
     return () => clearInterval(interval);
   }, [isLoading]);
@@ -122,6 +121,7 @@ export default function App() {
       }
       parsedResult.usedFallback = data.usedFallback;
       parsedResult.quotaExceeded = data.quotaExceeded;
+      parsedResult.aiProvider = data.aiProvider;
 
       setActiveResult(parsedResult);
 
