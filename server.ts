@@ -28,56 +28,39 @@ function getGeminiClient(): GoogleGenAI {
   return aiClient;
 }
 
-const SYSTEM_INSTRUCTION = `Você é um balconista sênior especialista em autopeças brasileiras e catálogos automotivos (Ideia2001, Catálogo Expresso, Nakata, Cofap, Monroe, Bosch, Cobreq, LUK, Valeo, Sachs, Gates, Dayco, Continental, TSA, DS, etc.).
+const SYSTEM_INSTRUCTION = `Aja como um balconista sênior, especialista em autopeças e catálogos automotivos (TecDoc, SBS, catálogos de fabricante), com foco em fechar vendas rápidas e assertivas no balcão e por telefone.
 
-OBJETIVO CRÍTICO:
-Fornecer o resultado da pesquisa como UMA LISTA DIRETA com os CÓDIGOS DE REFERÊNCIA EXATOS DAS MARCAS NO ATO DA CONSULTA para o balconista vender no balcão e lançar imediatamente no sistema da loja (como Ideia2001).
+REGRA DE TRIAGEM (antes de responder):
+Sempre que eu informar peça + modelo + ano, verifique se esses dados são suficientes para identificar a aplicação exata.
+- Se houver mais de uma motorização/versão possível para esse modelo/ano, NÃO chute: primeiro liste as "Perguntas de Confirmação" e peça para eu responder antes de fechar os códigos.
+- Só pule direto para os códigos se o modelo/ano/motor já for suficiente para aplicação única.
 
-REGRA DE OURO (TOLERÂNCIA ZERO PARA ERROS DE APLICAÇÃO):
-- NUNCA, EM HIPÓTESE ALGUMA, invente ou adivinhe códigos.
-- SEMPRE VERIFIQUE A MONTADORA E O MOTOR: Um código de correia dentada de Ford (ex: Dayco KTB286) NUNCA servirá em um Volkswagen Gol (cujo correto é Dayco KTB341). Vender a peça de outra montadora causa prejuízo grave à oficina.
-- Você DEVE obrigatoriamente utilizar a Busca Online nos catálogos oficiais e fornecer os códigos REAIS e EXATOS correspondentes à montadora, veículo e motorização solicitados.
-
-REGRA DE TRIAGEM E FILTRO (SEMPRE APLICAR):
-Sempre que o usuário informar peça + modelo + ano (+ motorização opcional):
-- Verifique se esses dados são suficientes para uma aplicação 100% única.
-- Se houver mais de uma motorização, geração de carroceria ou variação possível (ex: Gol G5 vs G4, com ABS ou sem ABS, lado LD ou LE, 1.0 ou 1.6):
-  1. Na Seção 1 (PERGUNTAS DE CONFIRMAÇÃO): liste APENAS as perguntas críticas e diretas de triagem pertinentes à PEÇA solicitada.
-     * ATENÇÃO: NÃO pergunte informações que já foram fornecidas na consulta (ex: se o usuário já preencheu a motorização, NÃO pergunte qual a motorização).
-     * ATENÇÃO: NÃO faça perguntas irrelevantes (ex: não pergunte lado direito/esquerdo para sensor de nível, bomba de combustível, ou embreagem, pois essas peças não possuem lado).
-  2. Na Seção 2 (CÓDIGOS DE REFERÊNCIA): Liste APENAS os códigos da peça EXATAMENTE solicitada. É ESTRITAMENTE PROIBIDO listar códigos de peças relacionadas, variações ou componentes do conjunto que não sejam a peça que o usuário digitou. (Exemplo: se o usuário pediu "Sensor de Nível", liste APENAS códigos de Sensor de Nível na Seção 2; NÃO liste Refil ou Flange aqui). NÃO chute uma única versão nem fique em branco! LISTE OS CÓDIGOS DE CADA VERSÃO/OPÇÃO (ex: "Opção A - Versão 1.0 / G5: Nakata HG 33010 | Cofap GP30263"). Dessa forma o balconista JÁ TEM OS CÓDIGOS REAIS IMEDIATAMENTE NA TELA enquanto confirma com o cliente!
-- Se o modelo, ano e motorização já forem suficientes para aplicação única, declare na Seção 1 "Aplicação identificada com precisão" e liste os códigos específicos na Seção 2.
-
-ESTRUTURA DE RESPOSTA OBRIGATÓRIA EM MARKDOWN (Nesta exata sequência numerada de 1 a 6):
+Quando eu confirmar os dados, responda SEMPRE em tópicos curtos, sem introdução, sem explicações longas — preciso ler em segundos com o cliente esperando. Formate em Markdown com os títulos abaixo, nesta ordem:
 
 1. PERGUNTAS DE CONFIRMAÇÃO
-- Liste perguntas diretas de triagem técnica (ex: geração do veículo, motorização 1.0 ou 1.6, com ou sem ABS, tipo de freio, câmbio manual ou automático).
-- Se a aplicação for 100% única e clara, escreva: "Aplicação identificada com precisão."
+Liste apenas o que muda a peça (motor, combustível, câmbio, ABS, direção hidráulica/elétrica, versão/linha, posição — dianteira/traseira, lado esquerdo/direito). Máximo 5 perguntas.
 
 2. CÓDIGOS DE REFERÊNCIA
-- Liste em bullet points os códigos de referência exatos no ato, APENAS para a peça buscada principal.
-- INCLUA SEMPRE os códigos para todos os fabricantes disponíveis, extraídos de bases cruzadas (Ideia2001, Montadora Original, Bosch, TSA, DS, VP, Magneti Marelli, Delphi, VDO, Continental, Nakata, COFAP, Monroe, Cobreq, Fras-le, LUK, Valeo, Sachs, SKF). Não oculte fabricantes!
-- PARA CADA CÓDIGO DE REFERÊNCIA, ADICIONE UMA DESCRIÇÃO TÉCNICA OBRIGATÓRIA usando um traço e separe os dados técnicos EXCLUSIVAMENTE RELEVANTES PARA A VENDA (ex: Dimensões, Pressão, Vazão, Lado, Pinos, Valor Ohmico) com barras verticais (|). NÃO inclua informações teóricas inúteis como "Função" ou "Tecnologia".
-- OBRIGATÓRIO: DESTAQUE A PEÇA ORIGINAL DE FÁBRICA (OEM). No item que for o original da montadora, inclua obrigatoriamente a tag "Origem: Peça Original" ou "Linha Original de Montagem" na descrição técnica.
-- Exemplo Correia Dentada (Gol G5 1.0): "* Dayco: KTB341 - Dentes: 135 | Aplicação: Motor EA111".
-- Exemplo Sensores: "* DS: 2334 - Sistema: Bosch | Valor Ôhmico: Cheio: 38 ± 4 Ω / Vazio: 283 ± 4 Ω | Combustível: Flex".
-- Exemplo Bombas: "* Bosch: F 000 TE1 98U - Pressão: 4.2 Bar | Vazão: 85 L/h | Sistema: Multiponto". Siga rigorosamente este padrão focado em conversão e aplicação real!
+- Código original (montadora), se souber.
+- Códigos das principais marcas de reposição compatíveis com a peça pedida (use apenas as marcas relevantes para a categoria da peça — não liste marca de amortecedor para vela, por exemplo). Marcas de referência: LUK, Valeo, Sachs, Nakata, Monroe, Bosch, NGK, SKF, DS, COFAP, CONTINENTAL, DAYCO, DISAUTO, FAMA, FANIA, GATES, FLORIO, IGUAÇU, IMA, JAHU, MOBENSANI, KYB, MAHLE, THOMSON, VISCONDE, TSA, URBA, VALCLEI, ZF AFTERMARKET, VETOR, SCHADEK, BROSOL, JAMAICA, NOVO KIT, NK, DPL, TECFIL, SABO, TARANTO, MAGNETI MARELLI, SYL, COBREQ, TECPADS, WAHLER.
+- Se não tiver certeza de um código, avise "verificar no sistema" em vez de inventar.
 
 3. ALERTAS TÉCNICOS
-- Liste os alertas críticos de montagem (ex: escorvamento/sangria do amortecedor a gás, substituição em pares, diferença de lado LD e LE, medição de espessura de disco, retífica de volante na embreagem).
+Observações rápidas de aplicação: peça vendida em par/kit, necessidade de peça complementar (ex: rolamento junto com amortecedor), falhas comuns dessa aplicação, ou variações que mudam o código entre lotes/anos.
 
-4. PEÇAS RELACIONADAS (VENDA CASADA NO BALCÃO)
-- Liste as peças complementares para agregar valor à venda do balcão. INCLUA OS CÓDIGOS REAIS dessas peças complementares se possível (ex: "- Kit Coxim com Rolamento: Nakata NKC 3001" ou "- Flange da Bomba de Combustível: TSA T-030018").
-- Para amortecedor: kit coxim com rolamento axial, batente, coifa, bieletas. Para freio: fluido DOT 4, discos novos. Para bomba: filtro de combustível, flange, sensor de nível.
+4. PEÇAS RELACIONADAS
+- Similares (mesma aplicação, outras marcas/qualidade — original, primeira linha, segunda linha).
+- Peças complementares comumente trocadas junto (ex: comprou amortecedor → sugerir kit de batente e coifa).
 
 5. IMAGEM DE REFERÊNCIA
-- Termo de busca pronto: "[nome da peça] [marca e código] [veículo]"
-- Descrição visual da peça (formato do corpo, número de furos na base, suportes soldados, pinos, conectores e travas) para conferir com a peça velha na bancada.
+- Se você tiver ferramenta de busca de imagem/internet ativada, busque e traga uma foto real da peça correspondente ao código listado, para eu comparar visualmente com o cliente.
+- Se não tiver acesso à internet, gere o termo de busca pronto (ex: "amortecedor dianteiro Nakata NF3007 Onix 2015") para eu colar direto no Google Imagens ou no site do fornecedor.
+- Em ambos os casos, descreva rapidamente o formato/cor/conectores da peça como apoio.
 
-6. ONDE ENCONTRAR (se não tiver em loja - Rio Claro - SP)
-- Liste distribuidoras e atacados locais de Rio Claro - SP com rota rápida de entrega e motoboy (Pellegrino Distribuidora, Garcia Autopeças, Bezerra Autopeças, Pit Stop Rio Claro, Disauto).
+6. ONDE ENCONTRAR (se não tiver em loja)
+Sugira fornecedores/distribuidoras de autopeças localizadas em Rio Claro-SP como alternativa, priorizando quem normalmente tem entrega rápida. Não sugira fornecedores de outras cidades.
 
-TOM: Ultra-objetivo, técnico e focado no balcão de vendas.`;
+TOM: direto, técnico, sem enrolação. Nunca responda com texto corrido fora dos tópicos acima.`;
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", service: "auto-pecas-balcao-rio-claro" });
@@ -135,33 +118,27 @@ app.post("/api/query-part", async (req, res) => {
       try {
         const ai = getGeminiClient();
 
-        let userPrompt = `CONSULTA DE BALCÃO DE AUTOPEÇAS (BUSCA DE CÓDIGOS DE REFERÊNCIA):\n` +
-          `- Peça Solicitada: ${part}\n` +
-          `- Montadora e Veículo: ${vehicle}\n` +
-          `- Ano: ${year || "Não informado"}`;
+        let userPrompt = `Preciso dos códigos de referência para a seguinte peça:\n` +
+          `- Peça: ${part}\n` +
+          `- Veículo: ${vehicle}\n`;
 
-        if (engine) {
-          userPrompt += `\n- Motorização / Versão: ${engine}`;
-        }
-        if (notes) {
-          userPrompt += `\n- Observações adicionais: ${notes}`;
-        }
-        
-        userPrompt += `\n\nATENÇÃO: VOCÊ DEVE VALIDAR A MONTADORA. SE O CARRO FOR VOLKSWAGEN (EX: GOL), NÃO FORNEÇA CÓDIGOS DE FORD (EX: KTB286). PESQUISE E CANCELE QUALQUER CÓDIGO INCOMPATÍVEL COM A MONTADORA.\n`;
+        if (year) userPrompt += `- Ano: ${year}\n`;
+        if (engine) userPrompt += `- Motorização: ${engine}\n`;
+        if (notes) userPrompt += `- Observações do cliente: ${notes}\n`;
+
+        userPrompt += `\nINSTRUÇÃO CRÍTICA: Você DEVE usar a ferramenta de Busca do Google AGORA para consultar catálogos oficiais (ex: NGK, Bosch, Nakata, etc) na internet para ESTE veículo exato. Não tente adivinhar. Pesquise e traga os códigos REAIS de aplicação. Use o bloco <thinking> no início para mostrar os termos que você pesquisou e o raciocínio.`;
 
         if (answers && Object.keys(answers).length > 0) {
-          userPrompt += `\n\nRESPOSTAS ÀS PERGUNTAS DE CONFIRMAÇÃO DADAS PELO CLIENTE NO BALCÃO:\n` +
+          userPrompt += `\n\nRespostas de triagem já confirmadas pelo cliente no balcão:\n` +
             Object.entries(answers)
-              .map(([q, a]) => `- Pergunta: "${q}" -> Resposta: "${a}"`)
+              .map(([q, a]) => `- ${q} -> ${a}`)
               .join("\n");
-          userPrompt += `\nCom base nessas respostas confirmadas, UTILIZE A BUSCA ONLINE (Google Search) procurando "catálogo [marca] [peça] [veículo]" para encontrar e listar os códigos de referência exatos.`;
-        } else {
-          userPrompt += `\nLembre-se: UTILIZE A BUSCA ONLINE (Google Search) procurando "catálogo [marca] [peça] [veículo]" agora para trazer os códigos reais! Liste perguntas na Seção 1 se houver variações. E na Seção 2 FORNEÇA NO ATO OS CÓDIGOS.`;
+          userPrompt += `\n\nAGORA QUE VOCÊ TEM A CONFIRMAÇÃO, PESQUISE E TRAGA OS CÓDIGOS EXATOS NA SEÇÃO 2!`;
         }
 
-        // 12-second timeout to allow Google Search grounding to complete
+        // 30-second timeout to allow robust Google Search grounding to complete
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout na consulta à IA (Busca Online demorou muito)")), 15000)
+          setTimeout(() => reject(new Error("Timeout na consulta à IA (Busca Online demorou muito)")), 30000)
         );
 
         let response: any = null;
@@ -172,7 +149,7 @@ app.post("/api/query-part", async (req, res) => {
               contents: userPrompt,
               config: {
                 systemInstruction: SYSTEM_INSTRUCTION,
-                temperature: 0.1,
+                temperature: 0.4,
                 tools: [{ googleSearch: {} }],
               },
             }),

@@ -803,6 +803,39 @@ ${rioClaroSuppliers}`;
 ${rioClaroSuppliers}`;
     }
 
+    // FIAT STRADA / PALIO / UNO
+    if (v.includes('strada') || v.includes('palio') || v.includes('uno') || v.includes('mobi') || v.includes('cronos') || v.includes('argo')) {
+      return `1. PERGUNTAS DE CONFIRMAÇÃO
+- Motor Fire 1.0/1.4, E-torQ 1.6/1.8, ou Firefly 1.0 (3 cil) / 1.3 (4 cil)?
+- Qual o ano do veículo?
+
+2. CÓDIGOS DE REFERÊNCIA
+- OPÇÃO A - Motores Firefly 1.3 8V 4 Cilindros (Ex: Strada 2020+, Argo, Cronos):
+  * NGK (Original Iridium): ILMAR8C9D - Gap: 0,9mm (Bicombustível/GNV)
+  
+- OPÇÃO B - Motores Firefly 1.0 6V 3 Cilindros:
+  * NGK (Original Iridium): ILKAR7F7G
+
+- OPÇÃO C - Motores Fire 1.0 e 1.4 8V Flex:
+  * NGK: BKR6E-D / BKR6E / BKR7E (verificar catálogo)
+  * Bosch: SP02 / SP04
+
+3. ALERTAS TÉCNICOS
+- Motores Firefly 1.0 e 1.3 usam bobinas individuais tipo pencil e velas de Iridium. Usar vela comum causa falhas graves.
+- Aperto requer cuidado (15-20 Nm) por ter rosca mais fina (M12).
+
+4. PEÇAS RELACIONADAS
+- Bobinas de ignição individuais (pencil coils).
+- Filtro de ar e combustível.
+
+5. IMAGEM DE REFERÊNCIA
+- Termo de busca pronto: "vela de ignicao ngk ILMAR8C9D"
+- Visual: Vela rosca fina M12, ponta Iridium.
+
+6. ONDE ENCONTRAR (se não tiver em loja)
+${rioClaroSuppliers}`;
+    }
+
     return `1. PERGUNTAS DE CONFIRMAÇÃO
 - Qual o motor e combustível do veículo (Flex, Gasolina ou GNV)?
 - As velas procuradas são convencionais (Níquel) ou de alta performance (Iridium/Platinum)?

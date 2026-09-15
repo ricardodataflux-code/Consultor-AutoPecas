@@ -98,7 +98,11 @@ export default function App() {
       }
 
       const data = await response.json();
-      const parsedResult = parseSeniorClerkMarkdown(data.markdown, {
+      
+      // Remove any <thinking> blocks the model might have generated
+      const cleanMarkdown = (data.markdown || '').replace(/<thinking>[\s\S]*?<\/thinking>/g, '').trim();
+
+      const parsedResult = parseSeniorClerkMarkdown(cleanMarkdown, {
         ...params,
         answers: answers || params.answers,
       });
