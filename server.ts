@@ -137,7 +137,7 @@ app.post("/api/query-part", async (req, res) => {
 
         let userPrompt = `CONSULTA DE BALCÃO DE AUTOPEÇAS (BUSCA DE CÓDIGOS DE REFERÊNCIA):\n` +
           `- Peça Solicitada: ${part}\n` +
-          `- Veículo: ${vehicle}\n` +
+          `- Montadora e Veículo: ${vehicle}\n` +
           `- Ano: ${year || "Não informado"}`;
 
         if (engine) {
@@ -146,26 +146,29 @@ app.post("/api/query-part", async (req, res) => {
         if (notes) {
           userPrompt += `\n- Observações adicionais: ${notes}`;
         }
+        
+        userPrompt += `\n\nATENÇÃO: VOCÊ DEVE VALIDAR A MONTADORA. SE O CARRO FOR VOLKSWAGEN (EX: GOL), NÃO FORNEÇA CÓDIGOS DE FORD (EX: KTB286). PESQUISE E CANCELE QUALQUER CÓDIGO INCOMPATÍVEL COM A MONTADORA.\n`;
+
         if (answers && Object.keys(answers).length > 0) {
           userPrompt += `\n\nRESPOSTAS ÀS PERGUNTAS DE CONFIRMAÇÃO DADAS PELO CLIENTE NO BALCÃO:\n` +
             Object.entries(answers)
               .map(([q, a]) => `- Pergunta: "${q}" -> Resposta: "${a}"`)
               .join("\n");
-          userPrompt += `\nCom base nessas respostas confirmadas, UTILIZE A BUSCA ONLINE (Google Search) nos catálogos dos fabricantes (ex: site:nakata.com.br, site:cofap.com.br, site:catalogocobreq.com.br) para encontrar e listar os códigos de referência exatos.`;
+          userPrompt += `\nCom base nessas respostas confirmadas, UTILIZE A BUSCA ONLINE (Google Search) procurando "catálogo [marca] [peça] [veículo]" para encontrar e listar os códigos de referência exatos.`;
         } else {
-          userPrompt += `\nLembre-se: UTILIZE A BUSCA ONLINE (Google Search) nos catálogos oficiais dos fabricantes agora para trazer os códigos reais! Liste perguntas na Seção 1 se houver variações. E na Seção 2 FORNEÇA NO ATO OS CÓDIGOS.`;
+          userPrompt += `\nLembre-se: UTILIZE A BUSCA ONLINE (Google Search) procurando "catálogo [marca] [peça] [veículo]" agora para trazer os códigos reais! Liste perguntas na Seção 1 se houver variações. E na Seção 2 FORNEÇA NO ATO OS CÓDIGOS.`;
         }
 
         // 12-second timeout to allow Google Search grounding to complete
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error("Timeout na consulta à IA (Busca Online demorou muito)")), 12000)
+          setTimeout(() => reject(new Error("Timeout na consulta à IA (Busca Online demorou muito)")), 15000)
         );
 
         let response: any = null;
         try {
           response = await Promise.race([
             ai.models.generateContent({
-              model: "gemini-2.5-flash",
+              model: "gemini-2.5-pro",
               contents: userPrompt,
               config: {
                 systemInstruction: SYSTEM_INSTRUCTION,
@@ -176,9 +179,9 @@ app.post("/api/query-part", async (req, res) => {
             timeoutPromise,
           ]);
         } catch (mErr: any) {
-          // If gemini-2.5-flash has temporary demand spike, try fallback model gemini-flash-latest
-          if (mErr?.status === 503 || String(mErr?.message || "").includes("503")) {
-            console.warn("[Balcão] Tentando modelo alternativo após 503...");
+          // If gemini-2.5-pro fails, fallback to flash
+          if (mErr?.status === 503 || String(mErr?.message || "").includes("503") || String(mErr?.message || "").includes("Timeout")) {
+            console.warn("[Balcão] Tentando modelo alternativo após falha no Pro...");
             response = await ai.models.generateContent({
               model: "gemini-flash-latest",
               contents: userPrompt,

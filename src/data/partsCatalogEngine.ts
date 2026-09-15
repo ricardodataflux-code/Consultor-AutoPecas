@@ -632,8 +632,8 @@ ${rioClaroSuppliers}`;
 - OPÇÃO A - Motor EA111 1.0 e 1.6 8V (135 dentes / tensor automático):
   * Original (VW): 030 198 119
   * Gates: KS 104 (Kit Correia + Tensor) / K015409XS
-  * Continental (ContiTech): CT 874 K1 (Kit) / CT 874 (Correia avulsa)
-  * Dayco: KTB 286 (Kit) / 135 SP 190 H (Correia)
+  * Continental (ContiTech): CT 1045 K1 (Kit) / CT 1045 (Correia avulsa)
+  * Dayco: KTB 341 (Kit) / 135 SP 190 H (Correia)
   * SKF: VKMA 01104 A
   * Nytron: 7784 (Tensor avulso) / Ranalle: R4104
 
@@ -767,6 +767,42 @@ ${rioClaroSuppliers}`;
   // 6. VELAS E BOBINAS DE IGNIÇÃO
   // ==========================================
   if (p.includes('vela') || p.includes('bobina') || p.includes('cabo')) {
+    
+    // VW GOL / FOX / VOYAGE EA111
+    if (v.includes('gol') || v.includes('fox') || v.includes('voyage')) {
+      return `1. PERGUNTAS DE CONFIRMAÇÃO
+- Motor EA111 1.0 8V (Até 2005 ou Após 2005)? 
+- Qual o combustível (Gasolina ou Flex/Totalflex)?
+
+2. CÓDIGOS DE REFERÊNCIA
+- OPÇÃO A - Motor EA111 RSH 1.0 8V Totalflex (Até 09/2005):
+  * NGK (Original / Convencional): ZFR7R-G - Gap: 0,9mm
+  * NGK (Cabo de Ignição): ST-V25
+  * NGK (Bobina): U2003
+  * Bosch: F 000 KE0 P02 (Super 4)
+
+- OPÇÃO B - Motor EA111 1.0 8V VHT / Totalflex (Após 2005):
+  * NGK (Original / Convencional): BKR7E-D / BKR7ESB-D
+  * NGK (Iridium): BKR7EIX
+  * Bosch: SP02
+
+3. ALERTAS TÉCNICOS
+- Atenção ao ano/motor EA111: Até 09/2005 (bloco antigo RSH) a vela correta é ZFR7R-G. Após 2005 (VHT) usa BKR7E-D. Usar vela incorreta causa falha de ignição e perda de potência.
+- Calibrar abertura do eletrodo (gap 0,9mm para a ZFR7R-G) antes de instalar.
+
+4. PEÇAS RELACIONADAS
+- Jogo de cabos de vela (NGK ST-V25 para modelo antigo).
+- Bobina de ignição (NGK U2003).
+- Limpa contato elétrico.
+
+5. IMAGEM DE REFERÊNCIA
+- Termo de busca pronto: "vela de ignicao ngk ZFR7R-G gol 2001"
+- Visual: Cerâmica branca lisa NGK com castelo sextavado de 16mm e rosca M14 longa.
+
+6. ONDE ENCONTRAR (se não tiver em loja)
+${rioClaroSuppliers}`;
+    }
+
     return `1. PERGUNTAS DE CONFIRMAÇÃO
 - Qual o motor e combustível do veículo (Flex, Gasolina ou GNV)?
 - As velas procuradas são convencionais (Níquel) ou de alta performance (Iridium/Platinum)?
