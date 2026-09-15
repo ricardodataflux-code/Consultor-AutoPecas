@@ -28,21 +28,24 @@ export function parseSeniorClerkMarkdown(
 
   const detectedCatalogBrands = new Set<string>();
 
-  // Section splitting
-  const sections = markdown.split(/(?=\b[1-6]\.\s+[A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ\s]+)/i);
+  // Section splitting - Highly resilient to missing numbers or markdown headers
+  const sections = markdown.split(/(?=(?:#+\s*)?(?:[1-6]\.\s*)?(?:PERGUNTAS DE CONFIRMAÇÃO|CÓDIGOS DE REFERÊNCIA|CÓDIGOS DE REFERENCIA|ALERTAS TÉCNICOS|ALERTAS TECNICOS|PEÇAS RELACIONADAS|PECAS RELACIONADAS|IMAGEM DE REFERÊNCIA|IMAGEM DE REFERENCIA|ONDE ENCONTRAR(?:.*)?))/i);
 
   for (const sec of sections) {
     const trimmed = sec.trim();
+    if (!trimmed) continue;
 
     // 1. Perguntas de confirmação
-    if (/^1\.\s+PERGUNTAS DE CONFIRMAÇÃO/i.test(trimmed)) {
+    if (/PERGUNTAS DE CONFIRMAÇÃO/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
       for (const line of lines) {
         const clean = line.replace(/^\s*[-*•\d.]\s*/, '').trim();
         if (
           clean &&
           !clean.toLowerCase().includes('aplicação identificada') &&
-          !clean.toLowerCase().includes('nenhuma pergunta pendente')
+          !clean.toLowerCase().includes('nenhuma pergunta pendente') &&
+          !clean.toLowerCase().includes('não há perguntas') &&
+          !clean.toLowerCase().includes('não é necessário')
         ) {
           result.confirmationQuestions.push(clean);
         }
@@ -53,11 +56,16 @@ export function parseSeniorClerkMarkdown(
     }
 
     // 2. Códigos de referência
-    else if (/^2\.\s+CÓDIGOS DE REFERÊNCIA/i.test(trimmed)) {
+    else if (/CÓDIGOS DE REFERÊNCIA|CÓDIGOS DE REFERENCIA/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
       for (const line of lines) {
-        const clean = line.replace(/^\s*[-*•]\s*/, '').trim();
+        const clean = line.replace(/^\s*[-*•]\s*/, '').replace(/\*\*/g, '').trim();
         if (!clean) continue;
+
+        if (clean.toLowerCase().includes('aguardando confirmação')) {
+           // Se a IA se recusou a dar código pq quer confirmação primeiro
+           continue;
+        }
 
         const colonMatch = clean.match(/^([^:]+):\s*(.+)$/);
         if (colonMatch) {
@@ -152,7 +160,7 @@ export function parseSeniorClerkMarkdown(
     }
 
     // 5. Imagem de referência
-    else if (/^5\.\s+IMAGEM DE REFERÊNCIA/i.test(trimmed)) {
+    else if (/IMAGEM DE REFERÊNCIA|IMAGEM DE REFERENCIA/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
       for (const line of lines) {
         const clean = line.replace(/^\s*[-*•]\s*/, '').trim();
@@ -179,7 +187,7 @@ export function parseSeniorClerkMarkdown(
     }
 
     // 6. Onde encontrar (Rio Claro - SP)
-    else if (/^6\.\s+ONDE ENCONTRAR/i.test(trimmed)) {
+    else if (/ONDE ENCONTRAR/i.test(trimmed)) {
       const lines = trimmed.split('\n').slice(1);
       for (const line of lines) {
         const clean = line.replace(/^\s*[-*•]\s*/, '').replace(/\*\*/g, '').trim();

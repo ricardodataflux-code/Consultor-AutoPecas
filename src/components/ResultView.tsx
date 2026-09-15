@@ -5,6 +5,7 @@ import {
   Check,
   HelpCircle,
   AlertTriangle,
+  AlertCircle,
   Package,
   Layers,
   Camera,
@@ -146,6 +147,33 @@ export const ResultView: React.FC<ResultViewProps> = ({
           <span className="text-xs font-bold text-slate-800 uppercase tracking-wide bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
             {result.query.part} • {result.query.vehicle} {result.query.year ? `(${result.query.year})` : ''}
           </span>
+          {result.query.abs && (
+            <span className={`text-[11px] font-bold px-2 py-1 rounded-md border ${
+              result.query.abs === 'com_abs' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'
+            }`}>
+              {result.query.abs === 'com_abs' ? 'Com ABS' : 'Sem ABS'}
+            </span>
+          )}
+          {result.query.transmission && (
+            <span className="text-[11px] font-bold bg-blue-50 text-blue-800 px-2 py-1 rounded-md border border-blue-200 capitalize">
+              Câmbio {result.query.transmission}
+            </span>
+          )}
+          {result.query.steering && (
+            <span className="text-[11px] font-bold bg-blue-50 text-blue-800 px-2 py-1 rounded-md border border-blue-200 capitalize">
+              Dir. {result.query.steering}
+            </span>
+          )}
+          {result.query.fuel && (
+            <span className="text-[11px] font-bold bg-indigo-50 text-indigo-800 px-2 py-1 rounded-md border border-indigo-200">
+              {result.query.fuel}
+            </span>
+          )}
+          {result.query.position && (
+            <span className="text-[11px] font-bold bg-purple-50 text-purple-800 px-2 py-1 rounded-md border border-purple-200">
+              {result.query.position}
+            </span>
+          )}
           {result.usedFallback ? (
             <span className="text-[11px] font-bold bg-amber-50 text-amber-800 px-2.5 py-1 rounded-md border border-amber-200 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-600" />
@@ -483,6 +511,14 @@ export const ResultView: React.FC<ResultViewProps> = ({
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : result.hasUnresolvedQuestions ? (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center flex flex-col items-center justify-center space-y-3">
+                <AlertCircle className="w-8 h-8 text-amber-500" />
+                <h4 className="text-sm font-bold text-amber-900">Aguardando Confirmação</h4>
+                <p className="text-xs text-amber-700 max-w-sm">
+                  A Inteligência Artificial precisa que você responda às perguntas na <strong>Seção 1</strong> acima para poder liberar os códigos exatos com segurança.
+                </p>
               </div>
             ) : (
               <div className="text-xs text-slate-600 whitespace-pre-line bg-slate-50 p-4 rounded-lg">

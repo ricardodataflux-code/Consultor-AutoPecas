@@ -5,9 +5,9 @@ import { RoncoliLogo } from './RoncoliLogo';
 interface HeaderProps {
   onNewQuery: () => void;
   onOpenBrands: () => void;
-  onOpenSuppliers: () => void;
-  onOpenHistory: () => void;
-  historyCount: number;
+  onOpenSuppliers?: () => void;
+  onOpenHistory?: () => void;
+  historyCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({

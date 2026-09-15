@@ -1,8 +1,18 @@
 export interface QueryParams {
   vehicle: string;
+  brand?: string;
+  model?: string;
   year: string;
   part: string;
   engine?: string;
+  engineSize?: string;
+  engineVersion?: string;
+  abs?: 'com_abs' | 'sem_abs' | '';
+  transmission?: 'manual' | 'automatico' | 'automatizado' | '';
+  steering?: 'hidraulica' | 'eletrica' | 'mecanica' | '';
+  fuel?: string;
+  position?: string;
+  airConditioning?: 'com_ar' | 'sem_ar' | '';
   notes?: string;
   answers?: Record<string, string>;
 }
