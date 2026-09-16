@@ -107,6 +107,22 @@ function generateBalcaoCatalogMarkdown(params: {
   notes: string;
   answers: Record<string, string>;
 }): string {
+  return generateInstantCatalogResult(
+    params.fullVehicle,
+    params.year,
+    params.part,
+    params.fullEngine,
+    params.notes,
+    params.answers,
+    {
+      abs: params.abs,
+      transmission: params.transmission,
+      steering: params.steering,
+      fuel: params.fuel,
+      position: params.position,
+      airConditioning: params.airConditioning,
+    }
+  );
   const v = params.fullVehicle.toLowerCase();
   const p = params.part.toLowerCase();
   const y = params.year || '2016';
@@ -612,6 +628,7 @@ app.post("/api/query-part", async (req, res) => {
     let markdown = "";
     let usedFallback = false;
     let isQuotaExceeded = false;
+    let aiProvider = "Catálogo Técnico Especialista Balcão";
     let verifiedSources: Array<{ title: string; uri: string }> = [];
 
     const now = Date.now();
@@ -705,8 +722,8 @@ app.post("/api/query-part", async (req, res) => {
         // immediately try direct automotive intelligence (which holds genuine catalog data).
 
         let response: any = null;
-        let aiProvider = "Google Gemini IA Oficial • Catálogos Automotivos";
-        const candidateModels = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-2.5-flash"];
+        aiProvider = "Google Gemini IA Oficial • Catálogos Automotivos";
+        const candidateModels = ["gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-2.5-flash", "gemini-3.8-flash"];
 
         for (const targetModel of candidateModels) {
           if (response?.text && response.text.trim()) break;
@@ -737,6 +754,10 @@ app.post("/api/query-part", async (req, res) => {
               break;
             }
           } catch (searchErr: any) {
+            const errStr = String(searchErr?.message || searchErr);
+            if (errStr.includes("429") || errStr.includes("quota") || errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("resource_exhausted")) {
+              isQuotaExceeded = true;
+            }
             console.warn(`[Balcão] ${targetModel} com Busca Online indisponível ou cota 429:`, searchErr?.message || searchErr);
 
             // Attempt B: Direct without Google Search tool (using rich neural weights on automotive parts)
@@ -764,6 +785,10 @@ app.post("/api/query-part", async (req, res) => {
                 break;
               }
             } catch (directErr: any) {
+              const errStr2 = String(directErr?.message || directErr);
+              if (errStr2.includes("429") || errStr2.includes("quota") || errStr2.includes("RESOURCE_EXHAUSTED") || errStr2.includes("resource_exhausted")) {
+                isQuotaExceeded = true;
+              }
               console.warn(`[Balcão] ${targetModel} Direto falhou:`, directErr?.message || directErr);
             }
           }
@@ -854,9 +879,10 @@ app.post("/api/query-part", async (req, res) => {
     res.json({
       markdown,
       usedFallback,
+      quotaExceeded: isQuotaExceeded,
       isQuotaExceeded,
       verifiedSources,
-      aiProvider: usedFallback ? "Catálogo Técnico Especialista Balcão" : "Google Gemini IA",
+      aiProvider,
     });
   } catch (err: any) {
     console.error("[Balcão Autopeças] Erro geral ao processar consulta:", err);
