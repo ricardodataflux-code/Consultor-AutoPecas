@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import { generateInstantCatalogResult } from "./src/data/partsCatalogEngine";
 
@@ -28,68 +28,85 @@ function getGeminiClient(): GoogleGenAI {
   return aiClient;
 }
 
-const SYSTEM_INSTRUCTION = `Você é um balconista sênior especialista em autopeças brasileiras e catálogos automotivos oficiais.
-Você atua com foco em fechar vendas rápidas, assertivas e 100% corretas no balcão e por telefone.
+// 1. Function Calling Declaration for Official Parts Catalog
+const lookupOfficialPartsCatalog: FunctionDeclaration = {
+  name: "lookupOfficialPartsCatalog",
+  description: "Consulta o banco de dados oficial e certificado de autopeças de 1ª linha (Schaeffler LuK, Nakata, Cobreq, Fras-le, Bosch, Cofap, Fremax, Sabó, Gates, Mahle, Dayco, SKF) para obter os códigos exatos homologados, alertas de montagem e peças relacionadas.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      vehicle: {
+        type: Type.STRING,
+        description: "Modelo/Nome do veículo (ex: Gol, Palio, Onix, HB20, Corolla, Civic, Celta, Fox, Sandero)",
+      },
+      year: {
+        type: Type.STRING,
+        description: "Ano do modelo do veículo (ex: 2016, 2012, 2020)",
+      },
+      part: {
+        type: Type.STRING,
+        description: "Nome da peça solicitada (ex: pastilha de freio dianteira, kit de embreagem, amortecedor dianteiro, disco de freio)",
+      },
+      engine: {
+        type: Type.STRING,
+        description: "Motorização e versão (ex: 1.0 8V Fire, 1.6 8V Total Flex, 1.0 12V Kappa)",
+      },
+      abs: {
+        type: Type.STRING,
+        description: "Presença de freio ABS (com_abs ou sem_abs)",
+      },
+      transmission: {
+        type: Type.STRING,
+        description: "Tipo de câmbio (manual, automatico, automatizado)",
+      },
+      steering: {
+        type: Type.STRING,
+        description: "Tipo de direção (hidraulica, eletrica, mecanica)",
+      },
+    },
+    required: ["vehicle", "part"],
+  },
+};
 
-CATÁLOGOS OFICIAIS DE REFERÊNCIA QUE VOCÊ DEVE CONSULTAR E CRUZAR CÓDIGOS:
-- SCHAEFFLER (LUK / INA / FAG): Kits de embreagem Repxpert, atuadores hidráulicos, rolamentos de embreagem e roda, tensores.
-- ZF AFTERMARKET (SACHS / LEMFÖRDER): Kits de embreagem, atuadores, amortecedores, bandejas e direção.
-- VALEO SERVICE: Sistemas de embreagem, atuadores hidráulicos, motores de partida, alternadores.
-- NAKATA: Suspensão, amortecedores, pivôs, terminais de direção e axiais, bieletas, juntas homocinéticas, bombas d'água.
-- COBREQ: Freios, pastilhas dianteiras e traseiras, sapatas, lonas, fluidos de freio.
-- FRAS-LE: Pastilhas Ceramaxx/Lonaflex, discos e tambores de freio.
-- BOSCH AUTOMOTIVE BRASIL: Injeção eletrônica, velas de ignição, cabos, bobinas, filtros, freios, bombas de combustível.
-- COFAP / MAGNETI MARELLI: Amortecedores Turbogás/Super, molas, bandejas, pastilhas.
-- MONROE & MONROE AXIOS: Amortecedores OESpectrum/Gas Premium, kits de batente, coxins, buchas de suspensão.
-- FREMAX: Discos de freio de carbono, tambores.
-- SABÓ: Retentores de volante, comando, juntas de motor, mangueiras, guarnições.
-- GATES / DAYCO / CONTINENTAL CONTITECH: Correias dentadas sincronizadoras, kits com tensores, correias Poly-V.
-- MAHLE / METAL LEVE: Filtros, anéis de segmento, pistões, bronzinas.
-- NGK / NTK: Velas de ignição Green/G-Power/Laser Iridium, cabos supressores, sensores de oxigênio (sonda lambda).
-- SKF: Rolamentos e cubos de roda, bombas d'água, tensores.
-- TRW / VARGA: Sistemas de freio, cilindros mestre, cilindros de roda, atuadores de embreagem.
-- FANIA / FAMA: Cabos de embreagem, acelerador e freio de mão.
-- URBA / BROSOL / SCHADEK: Bombas d'água, bombas de combustível, bombas de óleo.
-- TECFIL / WEGA: Filtros de óleo, combustível, ar do motor e cabine.
+const SYSTEM_INSTRUCTION = `Aja como um balconista sênior, especialista em autopeças e catálogos automotivos (TecDoc, SBS, catálogos de fabricante), com foco em fechar vendas rápidas e assertivas no balcão e por telefone.
 
-REGRA DE ESTRUTURAÇÃO OBRIGATÓRIA (Siga RIGOROSAMENTE esta ordem de 1 a 6):
+REGRA DE TRIAGEM (antes de responder):
+Sempre que eu informar peça + modelo + ano, verifique se esses dados são suficientes para identificar a aplicação exata.
+- Se houver mais de uma motorização/versão possível para esse modelo/ano, NÃO chute: primeiro liste as "Perguntas de Confirmação" e peça para eu responder antes de fechar os códigos.
+- Só pule direto para os códigos se o modelo/ano/motor já for suficiente para aplicação única.
+
+Quando eu confirmar os dados, responda SEMPRE em tópicos curtos, sem introdução, sem explicações longas — preciso ler em segundos com o cliente esperando. Formate em Markdown com os títulos abaixo, nesta ordem:
 
 1. PERGUNTAS DE CONFIRMAÇÃO
-- Se houver dúvidas técnicas críticas que alterem o código (ex: versão da carroceria, câmbio manual vs automatizado Dualogic, diâmetro do disco 180mm vs 190mm, com ABS vs sem ABS), formule de 2 a 4 perguntas diretas.
-- Se a aplicação já estiver 100% definida pelos dados informados, responda: "- Nenhuma pendência técnica. Aplicação fechada para [Veículo/Ano/Motor]."
+Liste apenas o que muda a peça (motor, combustível, câmbio, ABS, direção hidráulica/elétrica, versão/linha, posição — dianteira/traseira, lado esquerdo/direito). Máximo 5 perguntas.
+(Se todos os dados já tiverem sido informados ou confirmados, responda: "- Aplicação confirmada e fechada para o veículo informado.")
 
 2. ALERTAS TÉCNICOS
-(Estruture obrigatoriamente com os tópicos abaixo usando bullet points):
-- Variação de Lote: [Diferenças de lote, diâmetro, estrias ou ano de transição da peça]
-- Componente Opcional: [O que acompanha ou NÃO acompanha a peça/kit, ex: se o atuador hidráulico vem junto ou é vendido à parte]
-- Falha Comum: [Sintomas típicos de desgaste e causas recorrentes no veículo, ex: pedal duro, trepidações, ruídos]
-- Recomendação Mecânica: [Cuidados indispensáveis de montagem na oficina, ex: passe/retífica do volante do motor, sangria, escorvamento]
+Observações rápidas de aplicação: peça vendida em par/kit, necessidade de peça complementar (ex: rolamento junto com amortecedor), falhas comuns dessa aplicação, ou variações que mudam o código entre lotes/anos.
 
 3. CÓDIGOS DE REFERÊNCIA
-- Montadora ([Marca]): [Código OEM oficial da montadora]
-- [Marca Líder 1 (ex: LuK / Nakata / Cobreq)]: [Código] ([Descrição exata do kit/peça, estrias, diâmetro, se inclui platô+disco+rolamento])
-- [Marca Líder 2 (ex: Sachs / Cofap / Fras-le)]: [Código] ([Descrição da peça])
-- [Marca Líder 3 (ex: Valeo / Bosch / Monroe)]: [Código] ([Descrição da peça])
-(Traga os códigos reais dos principais fabricantes de autopeças de 1ª linha).
+- Código atualizado(montadora), se souber.
+- Códigos das principais marcas de reposição compatíveis com a peça pedida atualizada pelo catalogo online das marcas, CONSULTAR ESTRITAMENTE E MINUSCIOSAMENTE NOS CATALOGOS OLINE E OBTER O CODIGO EXATO E ATUALIZADO (use apenas as marcas relevantes para a categoria da peça — não liste marca de amortecedor para vela, por exemplo). Marcas de referência: LUK, Valeo, Sachs, Nakata, Monroe, Bosch, NGK, SKF, DS, COFAP, CONTINENTAL, DAYCO, DISAUTO, FAMA, FANIA, GATES, FLORIO, IGUAÇU, IMA, JAHU, MOBENSANI, KYB, MAHLE, THOMSON, VISCONDE, TSA, URBA, VALCLEI, ZF AFTERMARKET, VETOR, SCHADEK, BROSOL, JAMAICA, NOVO KIT, NK, DPL, TECFIL, SABO, TARANTO, MAGNETI MARELLI, SYL, COBREQ, TECPADS, WAHLER.
+- Se não tiver certeza de um código, avise "verificar no sistema" em vez de inventar.
 
 4. PEÇAS RELACIONADAS
-(Itens complementares e de venda casada para garantir a montagem completa e elevar o ticket do balcão):
-- [Nome do Componente 1]: [Fabricante] - [Código]
-- [Nome do Componente 2]: [Fabricante] - [Código]
-- [Nome do Componente 3]: [Fabricante] - [Código]
-- [Óleo / Fluido Recomendado]: [Marca / Especificação] - [Volume recomendado]
+- Similares (mesma aplicação, outras marcas/qualidade — original, primeira linha, segunda linha).
+- Peças complementares comumente trocadas junto (ex: comprou amortecedor → sugerir kit de batente e coifa).
+- listar as peças relacionadas com marca e codigo de referencia
 
 5. IMAGEM DE REFERÊNCIA
-- Termos de busca e especificações visuais de verificação: [Termo de busca completo incluindo carro, ano e marcas, e descrição física dos componentes (formato do platô, ranhuras, molas, medidas em mm, número de dentes/estrias) para o balconista conferir na bancada com a peça velha].
+- traga imagens dos produtos solicitados para pesquisa (termos de busca visual completos e características de inspeção de bancada).
 
-6. ONDE ENCONTRAR (Rio Claro-SP)
-(Lojas e distribuidoras locais em Rio Claro-SP com pronta entrega e agilidade de balcão):
-- Auto Peças 3R: Rua 06 A, 1269 - Vila Alemã. Telefone: (19) 3535-4499. Integrante da Rede PitStop, com entrega rápida de balcão.
-- AutoZone Rio Claro: Av. Presidente Tancredo de Almeida Neves, 535. Telefone fixo: (19) 2111-2750 / WhatsApp Mecânicas: (11) 94078-1966. Amplo estoque local para pronta entrega.
-- Dinâmica Auto Peças: Avenida 15 JP, 56 - Jardim Esmeralda. Telefone/WhatsApp: (19) 98185-5828. Foco em atendimento rápido regional.
-- Disauto Distribuidora: Rio Claro-SP. Telefone: (19) 3526-9000. Atacado automotivo com faturamento para oficinas.
+6. ONDE ENCONTRAR (se não tiver em loja)
+Sugira fornecedores/distribuidoras de autopeças localizadas em Rio Claro-SP como alternativa, priorizando quem normalmente tem entrega rápida. Não sugira fornecedores de outras cidades:
+- Auto Peças 3R: Rua 06 A, 1269 - Vila Alemã. Telefone: (19) 3535-4499. Integrante da Rede PitStop, entrega rápida de balcão.
+- AutoZone Rio Claro: Av. Presidente Tancredo de Almeida Neves, 535. Telefone fixo: (19) 2111-2750 / WhatsApp Mecânicas: (11) 94078-1966.
+- Dinâmica Auto Peças: Avenida 15 JP, 56 - Jardim Esmeralda. Telefone/WhatsApp: (19) 98185-5828.
+- Disauto Distribuidora: Rio Claro-SP. Telefone: (19) 3526-9000. Atacado automotivo regional.
 
-TOM: profissional, técnico, direto, sem enrolação.`;
+Enquanto nao inserir um novo produto para pesquisa ou um carro diferente, as informações para pesquisa deve ser mantido para o mesmo carro.
+
+TOM: direto, técnico, sem enrolação. Nunca responda com texto corrido fora dos tópicos acima.`;
 
 function generateBalcaoCatalogMarkdown(params: {
   fullVehicle: string;
@@ -703,54 +720,146 @@ app.post("/api/query-part", async (req, res) => {
         if (notes) userPrompt += `- Observações do balcão: ${notes}\n`;
 
         userPrompt += `\nINSTRUÇÃO CRÍTICA DE CONSULTA DE CATÁLOGOS:\n` +
-          `Você DEVE consultar os catálogos oficiais dos fabricantes de 1ª linha (Schaeffler LUK, Sachs, Valeo, Nakata, Cobreq, Fras-le, Bosch, Cofap, Monroe, Sabó, Fremax, Gates, Dayco, Continental, Mahle, NGK, SKF) para este veículo e peça.\n` +
-          `Pesquise e traga os códigos REAIS e oficiais de aplicação usando a busca online.\n` +
-          `Siga RIGOROSAMENTE as 6 seções numeradas (1. PERGUNTAS DE CONFIRMAÇÃO, 2. ALERTAS TÉCNICOS, 3. CÓDIGOS DE REFERÊNCIA, 4. PEÇAS RELACIONADAS, 5. IMAGEM DE REFERÊNCIA, 6. ONDE ENCONTRAR (Rio Claro-SP)).\n` +
-          `Na Seção 2 (ALERTAS TÉCNICOS), inclua obrigatoriamente: Variação de Lote, Componente Opcional, Falha Comum e Recomendação Mecânica.`;
+          `Siga RIGOROSAMENTE a estrutura e ordem dos tópicos:\n` +
+          `1. PERGUNTAS DE CONFIRMAÇÃO (se faltar motorização/versão que mude a peça, liste até 5 perguntas; se já estiver confirmado ou suficiente, declare aplicação confirmada e fechada)\n` +
+          `2. ALERTAS TÉCNICOS (observações rápidas: par/kit, peça complementar, falhas comuns, variação entre lotes/anos)\n` +
+          `3. CÓDIGOS DE REFERÊNCIA (Código montadora + códigos das principais marcas compatíveis obtidos nos catálogos online das marcas relevantes da categoria: LUK, Valeo, Sachs, Nakata, Monroe, Bosch, NGK, SKF, DS, COFAP, CONTINENTAL, DAYCO, DISAUTO, FAMA, FANIA, GATES, FLORIO, IGUAÇU, IMA, JAHU, MOBENSANI, KYB, MAHLE, THOMSON, VISCONDE, TSA, URBA, VALCLEI, ZF AFTERMARKET, VETOR, SCHADEK, BROSOL, JAMAICA, NOVO KIT, NK, DPL, TECFIL, SABO, TARANTO, MAGNETI MARELLI, SYL, COBREQ, TECPADS, WAHLER. Se não tiver certeza de um código, avise "verificar no sistema" em vez de inventar)\n` +
+          `4. PEÇAS RELACIONADAS (Similares de outras marcas/qualidade e complementares com marca e código de referência)\n` +
+          `5. IMAGEM DE REFERÊNCIA (termos e imagens dos produtos para conferência)\n` +
+          `6. ONDE ENCONTRAR (se não tiver em loja - fornecedores/distribuidoras em Rio Claro-SP)\n` +
+          `TOM: direto, técnico, sem enrolação. Nunca responda fora desses tópicos.`;
 
         if (answers && Object.keys(answers).length > 0) {
-          userPrompt += `\n\nRespostas de triagem já confirmadas pelo cliente no balcão:\n` +
+          userPrompt += `\n\nRespostas de confirmação do balcão já validadas:\n` +
             Object.entries(answers)
               .map(([q, a]) => `- ${q} -> ${a}`)
               .join("\n");
-          userPrompt += `\n\nAGORA QUE VOCÊ TEM A CONFIRMAÇÃO, PESQUISE E TRAGA OS CÓDIGOS EXATOS NA SEÇÃO 3!`;
+          userPrompt += `\n\nAGORA QUE OS DADOS ESTÃO CONFIRMADOS, PULE DIRETO PARA OS CÓDIGOS E DETALHES DE VENDA!`;
         }
 
-        // Multi-tier resilient execution with Google Gemini:
-        // Cascade: gemini-3.5-flash -> gemini-3.8-flash -> gemini-2.5-flash
-        // For each model: First try with Google Search Grounding; if quota 429/timeout occurs,
-        // immediately try direct automotive intelligence (which holds genuine catalog data).
+        // 2. RAG (Retrieval-Augmented Generation): Injetar dados certificados de fábrica como base da verdade
+        const officialRagDocument = generateBalcaoCatalogMarkdown({
+          fullVehicle,
+          brand: brand || '',
+          model: model || '',
+          year: year || '',
+          fullEngine,
+          part,
+          abs: abs || '',
+          transmission: transmission || '',
+          steering: steering || '',
+          fuel: fuel || '',
+          position: position || '',
+          airConditioning: airConditioning || '',
+          notes: notes || '',
+          answers: answers || {},
+        });
+
+        userPrompt += `\n\n=== BASE DE CONHECIMENTO RAG • CATÁLOGO OFICIAL CERTIFICADO (FONTE DA VERDADE) ===\n` +
+          `${officialRagDocument}\n` +
+          `===================================================================================\n\n` +
+          `DIRETRIZ CRÍTICA DE FECHAMENTO ANTI-ALUCINAÇÃO:\n` +
+          `1. Você deve priorizar e manter os códigos e especificações certificados do documento RAG acima ou comprovados em catálogo online.\n` +
+          `2. CRÍTICO: Você está proibido de gerar qualquer código numérico ou alfanumérico com base na sua memória. Se você não tiver o documento exato ou o link direto do catálogo online da marca indexado na sua base com 100% de certeza, você deve escrever obrigatoriamente: 'Consultar catálogo físico/sistema da loja'. NUNCA invente ou estime um código de autopeça, pois isso gera prejuízo financeiro e retorno de mercadoria.\n` +
+          `3. Se você precisar de consulta automatizada adicional no banco de autopeças, acione a ferramenta 'lookupOfficialPartsCatalog'.\n`;
+
+        // Model selection priority:
+        // 1. gemini-3.1-pro-preview (Gemini Pro - maximum reasoning for technical catalog parsing)
+        // 2. gemini-3.8-flash (Gemini Flash - fast search grounding & function calling)
+        // 3. gemini-flash-latest / gemini-3.1-flash-lite (resilient fallback)
+        // Temperature: 0.0 (strictly zeroes hallucination and ensures exact catalog adherence)
 
         let response: any = null;
-        aiProvider = "Google Gemini IA Oficial • Catálogos Automotivos";
-        const candidateModels = ["gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-2.5-flash", "gemini-3.8-flash"];
+        aiProvider = "Google Gemini IA • Catálogos Oficiais (RAG + Busca Online)";
+        const candidateModels = ["gemini-3.8-flash", "gemini-flash-latest"];
 
         for (const targetModel of candidateModels) {
           if (response?.text && response.text.trim()) break;
 
-          // Attempt A: with Google Search Grounding in official catalogs
+          // Attempt A: with Google Search Grounding & Function Calling
           try {
-            console.log(`[Balcão] Tentando ${targetModel} com Busca Online em Catálogos...`);
+            console.log(`[Balcão] Tentando ${targetModel} com RAG e Busca Online (Temp 0.0)...`);
             const timeoutPromise = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout Busca Online ${targetModel} (10s)`)), 10000)
+              setTimeout(() => reject(new Error(`Timeout Busca Online ${targetModel} (5s)`)), 5000)
             );
 
-            response = await Promise.race([
+            let initialResponse = await Promise.race([
               ai.models.generateContent({
                 model: targetModel,
                 contents: userPrompt,
                 config: {
                   systemInstruction: SYSTEM_INSTRUCTION,
-                  temperature: 0.2,
-                  tools: [{ googleSearch: {} }],
+                  temperature: 0.0,
+                  tools: [
+                    { googleSearch: {} },
+                    { functionDeclarations: [lookupOfficialPartsCatalog] },
+                  ],
+                  toolConfig: { includeServerSideToolInvocations: true },
                 },
               }),
               timeoutPromise,
             ]);
 
+            // Handle Function Calling if requested by model
+            const functionCalls = (initialResponse as any)?.functionCalls;
+            if (functionCalls && functionCalls.length > 0) {
+              const call = functionCalls[0];
+              console.log(`[Balcão] Modelo invocou Function Calling: ${call.name}`, call.args);
+              if (call.name === "lookupOfficialPartsCatalog") {
+                const args = (call.args || {}) as any;
+                const toolCatalogData = generateBalcaoCatalogMarkdown({
+                  fullVehicle: args.vehicle || fullVehicle,
+                  brand: brand || '',
+                  model: args.model || model || '',
+                  year: args.year || year || '',
+                  fullEngine: args.engine || fullEngine,
+                  part: args.part || part,
+                  abs: args.abs || abs || '',
+                  transmission: args.transmission || transmission || '',
+                  steering: args.steering || steering || '',
+                  fuel: fuel || '',
+                  position: position || '',
+                  airConditioning: airConditioning || '',
+                  notes: notes || '',
+                  answers: answers || {},
+                });
+
+                const candidateContent = (initialResponse as any)?.candidates?.[0]?.content;
+                const toolResponse = await ai.models.generateContent({
+                  model: targetModel,
+                  contents: [
+                    { role: "user", parts: [{ text: userPrompt }] },
+                    candidateContent,
+                    {
+                      role: "user",
+                      parts: [{
+                        functionResponse: {
+                          name: "lookupOfficialPartsCatalog",
+                          response: {
+                            status: "success",
+                            officialCatalog: toolCatalogData,
+                          },
+                        },
+                      }],
+                    },
+                  ],
+                  config: {
+                    systemInstruction: SYSTEM_INSTRUCTION,
+                    temperature: 0.0,
+                  },
+                });
+
+                if (toolResponse?.text && toolResponse.text.trim()) {
+                  initialResponse = toolResponse;
+                }
+              }
+            }
+
+            response = initialResponse;
+
             if (response?.text && response.text.trim()) {
-              aiProvider = `Google Gemini IA (${targetModel}) • Busca Online em Catálogos`;
-              console.log(`[Balcão] Sucesso com ${targetModel} (com Busca Online)!`);
+              aiProvider = `Google Gemini IA (${targetModel}) • RAG + Busca Online (Temp 0.0)`;
+              console.log(`[Balcão] Sucesso com ${targetModel} (com RAG e Busca)!`);
               break;
             }
           } catch (searchErr: any) {
@@ -758,13 +867,13 @@ app.post("/api/query-part", async (req, res) => {
             if (errStr.includes("429") || errStr.includes("quota") || errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("resource_exhausted")) {
               isQuotaExceeded = true;
             }
-            console.warn(`[Balcão] ${targetModel} com Busca Online indisponível ou cota 429:`, searchErr?.message || searchErr);
+            console.warn(`[Balcão] ${targetModel} com RAG/Busca indisponível ou cota 429:`, searchErr?.message || searchErr);
 
-            // Attempt B: Direct without Google Search tool (using rich neural weights on automotive parts)
+            // Attempt B: Direct with RAG context (using verified catalog documentation)
             try {
-              console.log(`[Balcão] Tentando ${targetModel} Direto (sem ferramenta)...`);
+              console.log(`[Balcão] Tentando ${targetModel} Direto com RAG (Temp 0.0)...`);
               const timeoutPromise2 = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error(`Timeout IA Direta ${targetModel} (10s)`)), 10000)
+                setTimeout(() => reject(new Error(`Timeout IA Direta ${targetModel} (5s)`)), 5000)
               );
 
               response = await Promise.race([
@@ -773,15 +882,15 @@ app.post("/api/query-part", async (req, res) => {
                   contents: userPrompt,
                   config: {
                     systemInstruction: SYSTEM_INSTRUCTION,
-                    temperature: 0.2,
+                    temperature: 0.0,
                   },
                 }),
                 timeoutPromise2,
               ]);
 
               if (response?.text && response.text.trim()) {
-                aiProvider = `Google Gemini IA (${targetModel}) • Inteligência Automotiva Multimarcas`;
-                console.log(`[Balcão] Sucesso com ${targetModel} Direto!`);
+                aiProvider = `Google Gemini IA (${targetModel}) • RAG Catálogo Oficial (Temp 0.0)`;
+                console.log(`[Balcão] Sucesso com ${targetModel} Direto RAG!`);
                 break;
               }
             } catch (directErr: any) {

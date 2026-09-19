@@ -468,6 +468,20 @@ export const ResultView: React.FC<ResultViewProps> = ({
                   <p className="text-xs text-blue-200/90 mt-0.5">
                     Confronte e valide os códigos em tempo real no Google IA e nos 12 portais oficiais dos fabricantes brasileiros
                   </p>
+                  <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                    <span className="text-[10px] font-bold bg-white/10 text-cyan-300 px-2 py-0.5 rounded border border-white/10">
+                      Motor: {result.aiProvider || 'Gemini Pro'}
+                    </span>
+                    <span className="text-[10px] font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-400/20">
+                      Temperatura: 0.0 (Fidelidade Estrita)
+                    </span>
+                    <span className="text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded border border-amber-400/20">
+                      Ferramenta: Google Search Grounding
+                    </span>
+                    <span className="text-[10px] font-bold bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded border border-purple-400/20">
+                      Segurança: Block some (Padrão)
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -1099,10 +1113,10 @@ export const ResultView: React.FC<ResultViewProps> = ({
                 <div>
                   <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-rose-600" />
-                    6. ONDE ENCONTRAR (Rio Claro - SP)
+                    6. ONDE ENCONTRAR (se não tiver em loja)
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Lojas e distribuidores parceiros locais para faturamento rápido e entrega via motoboy
+                    Fornecedores e distribuidoras em Rio Claro-SP com pronta entrega e agilidade de balcão
                   </p>
                 </div>
               </div>

@@ -785,34 +785,34 @@ export function generateInstantCatalogResult(
   // 3. CÓDIGOS DE REFERÊNCIA
   md += "# 3. CÓDIGOS DE REFERÊNCIA\n";
   if (record) {
-    md += `- **Montadora (OEM Original):** \`${record.originalOEM}\` (Código de linha de montagem)\n`;
+    md += `- **Montadora (Código OEM):** \`${record.originalOEM}\`\n`;
     record.brands.forEach((b) => {
       md += `- **${b.brand}:** \`${b.code}\` (${b.description})\n`;
     });
   } else {
-    // Veículo fora da base estática: trazer as marcas líderes oficiais com os portais de consulta e códigos recomendados
+    // Veículo fora da base estática: trazer as marcas com recomendação estrita de verificar no sistema
     const pLower = part.toLowerCase();
     if (pLower.includes("embreagem")) {
-      md += `- **Montadora (OEM):** \`Consulte pelo Chassi\` (Código oficial de montadora)\n`;
-      md += `- **Schaeffler LuK:** \`Consulte RepXpert LuK\` (Kit Platô + Disco + Rolamento específico para ${fullVehicle})\n`;
-      md += `- **Sachs / ZF:** \`Consulte Catálogo ZF Sachs\` (Kit de embreagem linha pesada e leve)\n`;
-      md += `- **Valeo:** \`Consulte Valeo Service\` (Tecnologia original de fábrica)\n`;
+      md += `- **Montadora (OEM):** \`verificar no sistema\` (consultar pelo chassi no catálogo oficial)\n`;
+      md += `- **Schaeffler LuK:** \`verificar no sistema\` (consultar portal RepXpert LuK)\n`;
+      md += `- **Sachs / ZF:** \`verificar no sistema\` (consultar catálogo ZF Aftermarket)\n`;
+      md += `- **Valeo:** \`verificar no sistema\` (consultar catálogo Valeo Service)\n`;
     } else if (pLower.includes("pastilha") || pLower.includes("freio")) {
-      md += `- **Montadora (OEM):** \`Consulte pelo Chassi\` (Pastilha de montadora original)\n`;
-      md += `- **Cobreq:** \`Consulte Catálogo Eletrônico Cobreq\` (Jogo de pastilhas dianteiras/traseiras)\n`;
-      md += `- **Fras-le:** \`Consulte Catálogo Fras-le\` (Linha Ceramaxx Lonaflex)\n`;
-      md += `- **Nakata:** \`Consulte Catálogo Nakata\` (Pastilha de freio cerâmica)\n`;
-      md += `- **Bosch:** \`Consulte eCat Bosch\` (Linha de frenagem silenciosa)\n`;
+      md += `- **Montadora (OEM):** \`verificar no sistema\` (consultar pelo chassi)\n`;
+      md += `- **Cobreq:** \`verificar no sistema\` (consultar catálogo eletrônico Cobreq)\n`;
+      md += `- **Fras-le:** \`verificar no sistema\` (consultar catálogo Fras-le)\n`;
+      md += `- **Nakata:** \`verificar no sistema\` (consultar catálogo Nakata)\n`;
+      md += `- **Bosch:** \`verificar no sistema\` (consultar eCat Bosch Brasil)\n`;
     } else if (pLower.includes("amortecedor")) {
-      md += `- **Montadora (OEM):** \`Consulte pelo Chassi\` (Código original de fábrica)\n`;
-      md += `- **Cofap:** \`Consulte Catálogo Cofap Turbogás\` (Amortecedores pressurizados)\n`;
-      md += `- **Nakata:** \`Consulte Catálogo Nakata HG\` (Amortecedor a gás pressurizado)\n`;
-      md += `- **Monroe:** \`Consulte Catálogo Monroe OESpectrum\` (Amortecedor pressurizado de alta durabilidade)\n`;
+      md += `- **Montadora (OEM):** \`verificar no sistema\` (consultar pelo chassi)\n`;
+      md += `- **Cofap:** \`verificar no sistema\` (consultar catálogo Cofap Turbogás)\n`;
+      md += `- **Nakata:** \`verificar no sistema\` (consultar catálogo Nakata HG)\n`;
+      md += `- **Monroe:** \`verificar no sistema\` (consultar catálogo Monroe OESpectrum)\n`;
     } else {
-      md += `- **Montadora (OEM):** \`Consulte pelo Chassi\` (Código homologado de montadora)\n`;
-      md += `- **Nakata:** \`Consulte Catálogo Oficial Nakata\` (Peça de 1ª linha com garantia nacional)\n`;
-      md += `- **Cobreq / Fras-le:** \`Consulte Catálogo do Fabricante\` (Alta durabilidade e segurança)\n`;
-      md += `- **Bosch Automotive:** \`Consulte Catálogo eCat Bosch\` (Homologado para linha leve)\n`;
+      md += `- **Montadora (OEM):** \`verificar no sistema\` (consultar pelo chassi)\n`;
+      md += `- **Nakata:** \`verificar no sistema\` (consultar catálogo oficial Nakata)\n`;
+      md += `- **Cobreq / Fras-le:** \`verificar no sistema\` (consultar catálogo fabricante)\n`;
+      md += `- **Bosch:** \`verificar no sistema\` (consultar eCat Bosch)\n`;
     }
   }
   md += "\n";
@@ -823,16 +823,16 @@ export function generateInstantCatalogResult(
     record.complementaryParts.forEach((cp) => {
       md += `- ${cp}\n`;
     });
-    md += `- **Marcas Similares de Confiança:** ${record.similarBrands}\n\n`;
+    md += `- **Similares:** ${record.similarBrands}\n\n`;
   } else {
-    md += `- Itens complementares de fixação, parafusos, buchas e retentores novos.\n`;
-    md += `- Lubrificantes, graxas de alta temperatura ou fluidos específicos de trabalho.\n`;
-    md += `- **Marcas Similares de Confiança:** Schaeffler LuK, Sachs, Nakata, Cobreq, Fras-le, Bosch, Cofap, Fremax, Sabó, Monroe.\n\n`;
+    md += `- Kit complementar de fixação e vedações: verificar no sistema\n`;
+    md += `- Fluido / lubrificante homologado de trabalho: verificar no sistema\n`;
+    md += `- **Similares:** Marcas de 1ª linha recomendadas: Nakata, Cofap, Cobreq, Fras-le, Bosch, Schaeffler LuK, Monroe, Mahle.\n\n`;
   }
 
   // 5. IMAGEM DE REFERÊNCIA
   md += "# 5. IMAGEM DE REFERÊNCIA\n";
-  const searchReady = `${part} ${fullVehicle} ${year || ""} catalogo oficial`.trim();
+  const searchReady = `${part} ${fullVehicle} ${year || ""}`.trim();
   md += `- **Termo de busca pronto:** "${searchReady}"\n`;
   if (record) {
     md += `- **Descrição visual para conferência:** ${record.searchVisual}\n\n`;
@@ -840,8 +840,8 @@ export function generateInstantCatalogResult(
     md += `- **Descrição visual para conferência:** Conferir o formato físico, quantidade de furos/estrias e dimensões em milímetros com a peça retirada do veículo.\n\n`;
   }
 
-  // 6. ONDE ENCONTRAR (Rio Claro-SP)
-  md += "# 6. ONDE ENCONTRAR (Rio Claro-SP)\n";
+  // 6. ONDE ENCONTRAR (se não tiver em loja)
+  md += "# 6. ONDE ENCONTRAR (se não tiver em loja)\n";
   md += `- **Auto Peças 3R:** Rua 06 A, 1269 - Vila Alemã. Telefone: (19) 3535-4499. Integrante da Rede PitStop, com entrega rápida de balcão.\n`;
   md += `- **AutoZone Rio Claro:** Av. Presidente Tancredo de Almeida Neves, 535. Telefone fixo: (19) 2111-2750 / WhatsApp Mecânicas: (11) 94078-1966. Amplo estoque local para pronta entrega.\n`;
   md += `- **Dinâmica Auto Peças:** Avenida 15 JP, 56 - Jardim Esmeralda. Telefone/WhatsApp: (19) 98185-5828. Foco em atendimento rápido regional.\n`;
