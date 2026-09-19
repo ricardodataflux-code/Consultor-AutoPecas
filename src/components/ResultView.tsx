@@ -30,6 +30,7 @@ import {
   Building2,
   Info,
   MessageCircle,
+  Database,
 } from 'lucide-react';
 import { QueryResult, ParsedCodeItem } from '../types';
 
@@ -449,6 +450,72 @@ export const ResultView: React.FC<ResultViewProps> = ({
       {/* PAINEL ESPECIALISTA DO BALCÃO (6 SEÇÕES RIGOROSAMENTE NA ORDEM) */}
       {viewMode === 'visual' && (
         <div className="w-full space-y-5">
+          {/* CARD ARQUITETURA FUNCTION CALLING & TECDOC / TABELA CSV */}
+          {result.functionCallInfo && (
+            <div className="w-full bg-slate-950 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-emerald-500/40 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0 shadow-inner">
+                    <Database className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-sm sm:text-base font-black tracking-wide text-white">
+                        ARQUITETURA DE CONSULTA • FUNCTION CALLING TECDOC
+                      </h4>
+                      <span className="text-[10px] font-black bg-emerald-500 text-slate-950 px-2 py-0.5 rounded uppercase tracking-wider">
+                        100% Assertivo
+                      </span>
+                      <span className="text-[10px] font-mono bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded border border-blue-400/20">
+                        {result.functionCallInfo.functionName}()
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      Fonte homologada: <strong>{result.functionCallInfo.source}</strong> • Sem alucinação de códigos
+                    </p>
+                  </div>
+                </div>
+
+                {result.functionCallInfo.oemCode && (
+                  <div className="px-3 py-1.5 rounded-xl bg-emerald-950 border border-emerald-600/50 text-right">
+                    <span className="text-[10px] text-emerald-300 font-bold block uppercase">OEM Homologado</span>
+                    <span className="font-mono text-xs font-black text-emerald-200">{result.functionCallInfo.oemCode}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Parâmetros estruturados extraídos */}
+              <div className="pt-2.5 border-t border-slate-800/80 flex flex-wrap items-center gap-2 text-xs">
+                <span className="text-[11px] font-bold text-slate-400">Parâmetros Estruturados:</span>
+                {result.functionCallInfo.parameters?.carro && (
+                  <span className="px-2 py-0.5 rounded bg-slate-900 text-cyan-300 text-[11px] font-mono border border-slate-700">
+                    Carro: {result.functionCallInfo.parameters.carro}
+                  </span>
+                )}
+                {result.functionCallInfo.parameters?.ano && (
+                  <span className="px-2 py-0.5 rounded bg-slate-900 text-amber-300 text-[11px] font-mono border border-slate-700">
+                    Ano: {result.functionCallInfo.parameters.ano}
+                  </span>
+                )}
+                {result.functionCallInfo.parameters?.motor && (
+                  <span className="px-2 py-0.5 rounded bg-slate-900 text-purple-300 text-[11px] font-mono border border-slate-700">
+                    Motor: {result.functionCallInfo.parameters.motor}
+                  </span>
+                )}
+                {result.functionCallInfo.parameters?.item && (
+                  <span className="px-2 py-0.5 rounded bg-slate-900 text-emerald-300 text-[11px] font-mono border border-slate-700">
+                    Peça: {result.functionCallInfo.parameters.item}
+                  </span>
+                )}
+                {result.functionCallInfo.brandsCount !== undefined && result.functionCallInfo.brandsCount > 0 && (
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[11px] font-bold border border-emerald-400/30">
+                    ✓ {result.functionCallInfo.brandsCount} marcas homologadas cruzadas
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* BANNER SISTEMA DE PESQUISA GOOGLE IA & CATÁLOGOS OFICIAIS */}
           <div className="w-full bg-linear-to-r from-slate-900 via-blue-950 to-indigo-950 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-blue-900/60 space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

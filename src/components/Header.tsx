@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wrench, MapPin, Sparkles, BookOpen, Clock, PlusCircle } from 'lucide-react';
+import { Wrench, MapPin, Sparkles, BookOpen, Clock, PlusCircle, Database } from 'lucide-react';
 import { RoncoliLogo } from './RoncoliLogo';
 
 interface HeaderProps {
@@ -7,12 +7,14 @@ interface HeaderProps {
   onOpenBrands: () => void;
   onOpenSuppliers?: () => void;
   onOpenHistory?: () => void;
+  onOpenTecDoc?: () => void;
   historyCount?: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onNewQuery,
   onOpenBrands,
+  onOpenTecDoc,
 }) => {
   const [dateTime, setDateTime] = useState(new Date());
 
@@ -33,6 +35,10 @@ export const Header: React.FC<HeaderProps> = ({
                 <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
                   Roncoli - Triagem
                 </h1>
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-400/30 px-2 py-0.5 rounded-full">
+                  <Database className="w-3 h-3 text-emerald-400" />
+                  TecDoc / CSV Ativo
+                </span>
               </div>
               <div className="flex items-center space-x-2 text-xs text-slate-400 mt-0.5">
                 <span className="flex items-center gap-1 text-amber-400 font-medium">
@@ -55,6 +61,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Action Navigation */}
           <div className="flex items-center space-x-2 overflow-x-auto pb-1 sm:pb-0">
+            {onOpenTecDoc && (
+              <button
+                id="btn-open-tecdoc"
+                onClick={onOpenTecDoc}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-emerald-900/60 hover:bg-emerald-800/80 text-emerald-200 text-xs font-bold border border-emerald-600/40 transition-all whitespace-nowrap active:scale-95 shadow-xs"
+                title="Arquitetura TecDoc e Tabela de Equivalência CSV"
+              >
+                <Database className="w-3.5 h-3.5 text-emerald-400" />
+                <span>TecDoc & CSV</span>
+                <span className="bg-emerald-500 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded">100%</span>
+              </button>
+            )}
             <button
               id="btn-new-query"
               onClick={onNewQuery}
@@ -79,3 +97,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+

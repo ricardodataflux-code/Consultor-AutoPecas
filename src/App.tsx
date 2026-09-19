@@ -5,6 +5,7 @@ import { ResultView } from './components/ResultView';
 import { BrandsModal } from './components/BrandsModal';
 import { SuppliersModal } from './components/SuppliersModal';
 import { HistoryDrawer } from './components/HistoryDrawer';
+import { TecDocModal } from './components/TecDocModal';
 import { QueryParams, QueryResult } from './types';
 import { parseSeniorClerkMarkdown } from './utils/parser';
 import { AlertCircle, RefreshCw, Sparkles, CheckCircle2, ShieldAlert } from 'lucide-react';
@@ -23,6 +24,8 @@ export default function App() {
   const [isBrandsModalOpen, setIsBrandsModalOpen] = useState(false);
   const [isSuppliersModalOpen, setIsSuppliersModalOpen] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+  const [isTecDocModalOpen, setIsTecDocModalOpen] = useState(false);
+
 
   // History
   const [history, setHistory] = useState<QueryResult[]>(() => {
@@ -64,14 +67,16 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (isBrandsModalOpen) setIsBrandsModalOpen(false);
+        if (isTecDocModalOpen) setIsTecDocModalOpen(false);
+        else if (isBrandsModalOpen) setIsBrandsModalOpen(false);
         else if (isSuppliersModalOpen) setIsSuppliersModalOpen(false);
         else if (isHistoryDrawerOpen) setIsHistoryDrawerOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isBrandsModalOpen, isSuppliersModalOpen, isHistoryDrawerOpen]);
+  }, [isTecDocModalOpen, isBrandsModalOpen, isSuppliersModalOpen, isHistoryDrawerOpen]);
+
 
   const executeQuery = async (params: QueryParams, answers?: Record<string, string>) => {
     setIsLoading(true);
@@ -123,6 +128,9 @@ export default function App() {
       parsedResult.usedFallback = data.usedFallback;
       parsedResult.quotaExceeded = data.quotaExceeded;
       parsedResult.aiProvider = data.aiProvider;
+      if (data.functionCallInfo) {
+        parsedResult.functionCallInfo = data.functionCallInfo;
+      }
 
       setActiveResult(parsedResult);
 
@@ -212,7 +220,9 @@ export default function App() {
       <Header
         onNewQuery={handleNewQuery}
         onOpenBrands={() => setIsBrandsModalOpen(true)}
+        onOpenTecDoc={() => setIsTecDocModalOpen(true)}
       />
+
 
       {/* Main Container */}
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -353,6 +363,11 @@ export default function App() {
       <SuppliersModal
         isOpen={isSuppliersModalOpen}
         onClose={() => setIsSuppliersModalOpen(false)}
+      />
+
+      <TecDocModal
+        isOpen={isTecDocModalOpen}
+        onClose={() => setIsTecDocModalOpen(false)}
       />
 
       <HistoryDrawer

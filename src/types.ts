@@ -52,6 +52,24 @@ export interface ParsedRelatedItem {
   fullText: string;
 }
 
+export interface FunctionCallInfo {
+  functionName: string;
+  parameters: {
+    montadora?: string;
+    carro: string;
+    geracao_ou_modelo?: string;
+    ano?: string;
+    motor?: string;
+    item: string;
+    especificacoes?: string;
+  };
+  source: string;
+  matchesCount: number;
+  oemCode?: string;
+  brandsCount: number;
+  executedAt?: number;
+}
+
 export interface QueryResult {
   id: string;
   timestamp: number;
@@ -77,7 +95,9 @@ export interface QueryResult {
   usedFallback?: boolean;
   quotaExceeded?: boolean;
   aiProvider?: string;
+  functionCallInfo?: FunctionCallInfo;
 }
+
 
 export interface VehiclePreset {
   title: string;

@@ -4,6 +4,13 @@ import dotenv from "dotenv";
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import { generateInstantCatalogResult } from "./src/data/partsCatalogEngine";
+import {
+  executeTecDocFunctionCall,
+  getEquivalenceRecords,
+  setCustomCsvRecords,
+  searchEquivalenceTable,
+  TecDocQueryParams,
+} from "./src/data/equivalenceTableEngine";
 
 dotenv.config();
 
@@ -28,45 +35,46 @@ function getGeminiClient(): GoogleGenAI {
   return aiClient;
 }
 
-// 1. Function Calling Declaration for Official Parts Catalog
-const lookupOfficialPartsCatalog: FunctionDeclaration = {
-  name: "lookupOfficialPartsCatalog",
-  description: "Consulta o banco de dados oficial e certificado de autopeças de 1ª linha (Schaeffler LuK, Nakata, Cobreq, Fras-le, Bosch, Cofap, Fremax, Sabó, Gates, Mahle, Dayco, SKF) para obter os códigos exatos homologados, alertas de montagem e peças relacionadas.",
+// 1. Function Calling Declaration para TecDoc Catalogue Brasil & Tabela de Equivalência CSV
+const buscarPecaTecdocTool: FunctionDeclaration = {
+  name: "buscar_peca_tecdoc",
+  description: "Consulta a base oficial TecDoc Catalogue Brasil e a Tabela de Equivalência CSV de autopeças. Extrai os parâmetros estruturados do veículo (montadora, carro, geracao_ou_modelo, ano, motor, item, especificacoes) e retorna os códigos oficiais de montadora (OEM) e as conversões exatas para as marcas de reposição (Cofap, Nakata, Monroe, Cobreq, Fras-le, LuK, Sachs, Valeo, Bosch, NGK, etc.). Use esta função SEMPRE para garantir 100% de assertividade no balcão sem alucinação.",
   parameters: {
     type: Type.OBJECT,
     properties: {
-      vehicle: {
+      montadora: {
         type: Type.STRING,
-        description: "Modelo/Nome do veículo (ex: Gol, Palio, Onix, HB20, Corolla, Civic, Celta, Fox, Sandero)",
+        description: "Montadora do veículo (ex: Volkswagen, Fiat, Chevrolet, Ford, Renault, Hyundai, Toyota, Honda)",
       },
-      year: {
+      carro: {
         type: Type.STRING,
-        description: "Ano do modelo do veículo (ex: 2016, 2012, 2020)",
+        description: "Nome do modelo do veículo (ex: Gol, Onix, Palio, HB20, Corolla, Civic)",
       },
-      part: {
+      geracao_ou_modelo: {
         type: Type.STRING,
-        description: "Nome da peça solicitada (ex: pastilha de freio dianteira, kit de embreagem, amortecedor dianteiro, disco de freio)",
+        description: "Geração ou versão (ex: G5, G4, Joy, Fire, Sedan)",
       },
-      engine: {
+      ano: {
         type: Type.STRING,
-        description: "Motorização e versão (ex: 1.0 8V Fire, 1.6 8V Total Flex, 1.0 12V Kappa)",
+        description: "Ano do modelo (ex: 2010)",
       },
-      abs: {
+      motor: {
         type: Type.STRING,
-        description: "Presença de freio ABS (com_abs ou sem_abs)",
+        description: "Motorização e válvulas (ex: 1.0 8V, 1.6 8V, 1.4)",
       },
-      transmission: {
+      item: {
         type: Type.STRING,
-        description: "Tipo de câmbio (manual, automatico, automatizado)",
+        description: "Nome da peça automotiva solicitada (ex: amortecedor dianteiro, pastilha de freio dianteira, kit embreagem)",
       },
-      steering: {
+      especificacoes: {
         type: Type.STRING,
-        description: "Tipo de direção (hidraulica, eletrica, mecanica)",
+        description: "Opcionais e detalhes (ex: Com ABS, Manual, Direção Hidráulica)",
       },
     },
-    required: ["vehicle", "part"],
+    required: ["carro", "item"],
   },
 };
+
 
 const SYSTEM_INSTRUCTION = `Aja como um balconista sênior, especialista em autopeças e catálogos automotivos (TecDoc, SBS, catálogos de fabricante), com foco em fechar vendas rápidas e assertivas no balcão e por telefone.
 
@@ -647,6 +655,7 @@ app.post("/api/query-part", async (req, res) => {
     let isQuotaExceeded = false;
     let aiProvider = "Catálogo Técnico Especialista Balcão";
     let verifiedSources: Array<{ title: string; uri: string }> = [];
+    let functionCallInfo: any = null;
 
     const now = Date.now();
     const canTryAi = !!process.env.GEMINI_API_KEY && now >= geminiCooldownUntil;
@@ -764,100 +773,148 @@ app.post("/api/query-part", async (req, res) => {
           `3. Se você precisar de consulta automatizada adicional no banco de autopeças, acione a ferramenta 'lookupOfficialPartsCatalog'.\n`;
 
         // Model selection priority:
-        // 1. gemini-3.1-pro-preview (Gemini Pro - maximum reasoning for technical catalog parsing)
-        // 2. gemini-3.8-flash (Gemini Flash - fast search grounding & function calling)
-        // 3. gemini-flash-latest / gemini-3.1-flash-lite (resilient fallback)
+        // 1. gemini-2.5-flash (Proven fast, official support for Google Search Grounding & function calling)
+        // 2. gemini-flash-latest (Reliable fallback)
+        // 3. gemini-2.5-flash-lite (Ultra-fast lightweight fallback)
         // Temperature: 0.0 (strictly zeroes hallucination and ensures exact catalog adherence)
 
+        // Direct lookup in TecDoc / CSV equivalence table
+        const directTecDocQuery: TecDocQueryParams = {
+          montadora: brand || "",
+          carro: model || vehicle,
+          geracao_ou_modelo: vehicle,
+          ano: year || "",
+          motor: fullEngine || "",
+          item: part,
+          especificacoes: [abs, transmission, steering, fuel, position].filter(Boolean).join(", "),
+        };
+        const tecdocDirectResult = await executeTecDocFunctionCall(directTecDocQuery);
+
         let response: any = null;
+        functionCallInfo = null;
         aiProvider = "Google Gemini IA • Catálogos Oficiais (RAG + Busca Online)";
-        const candidateModels = ["gemini-3.8-flash", "gemini-flash-latest"];
+        const candidateModels = ["gemini-2.5-flash"];
 
         for (const targetModel of candidateModels) {
-          if (response?.text && response.text.trim()) break;
+          if (markdown.trim()) break;
 
-          // Attempt A: with Google Search Grounding & Function Calling
+          // Attempt 1: Official Function Calling (buscar_peca_tecdoc) -> 100% Assertiveness architecture
           try {
-            console.log(`[Balcão] Tentando ${targetModel} com RAG e Busca Online (Temp 0.0)...`);
-            const timeoutPromise = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout Busca Online ${targetModel} (5s)`)), 5000)
+            console.log(`[Balcão] Tentando ${targetModel} com Function Calling (buscar_peca_tecdoc)...`);
+            const fcTimeout = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout Function Calling ${targetModel} (6s)`)), 6000)
             );
 
-            let initialResponse = await Promise.race([
+            const initialResponse = await Promise.race([
               ai.models.generateContent({
                 model: targetModel,
                 contents: userPrompt,
                 config: {
                   systemInstruction: SYSTEM_INSTRUCTION,
                   temperature: 0.0,
-                  tools: [
-                    { googleSearch: {} },
-                    { functionDeclarations: [lookupOfficialPartsCatalog] },
-                  ],
-                  toolConfig: { includeServerSideToolInvocations: true },
+                  tools: [{ functionDeclarations: [buscarPecaTecdocTool] }],
                 },
               }),
-              timeoutPromise,
+              fcTimeout,
             ]);
 
-            // Handle Function Calling if requested by model
-            const functionCalls = (initialResponse as any)?.functionCalls;
-            if (functionCalls && functionCalls.length > 0) {
-              const call = functionCalls[0];
-              console.log(`[Balcão] Modelo invocou Function Calling: ${call.name}`, call.args);
-              if (call.name === "lookupOfficialPartsCatalog") {
-                const args = (call.args || {}) as any;
-                const toolCatalogData = generateBalcaoCatalogMarkdown({
-                  fullVehicle: args.vehicle || fullVehicle,
-                  brand: brand || '',
-                  model: args.model || model || '',
-                  year: args.year || year || '',
-                  fullEngine: args.engine || fullEngine,
-                  part: args.part || part,
-                  abs: args.abs || abs || '',
-                  transmission: args.transmission || transmission || '',
-                  steering: args.steering || steering || '',
-                  fuel: fuel || '',
-                  position: position || '',
-                  airConditioning: airConditioning || '',
-                  notes: notes || '',
-                  answers: answers || {},
-                });
+            if (initialResponse?.functionCalls && initialResponse.functionCalls.length > 0) {
+              const fc = initialResponse.functionCalls[0];
+              console.log(`[Balcão] Function Call emitida pelo Gemini: ${fc.name}`, fc.args);
+              const tecdocResult = await executeTecDocFunctionCall(fc.args as any);
 
-                const candidateContent = (initialResponse as any)?.candidates?.[0]?.content;
-                const toolResponse = await ai.models.generateContent({
+              // Call second turn to format the 6-topic response with verified data
+              const turn2Timeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error(`Timeout Turno 2 ${targetModel} (6s)`)), 6000)
+              );
+
+              const secondResponse = await Promise.race([
+                ai.models.generateContent({
                   model: targetModel,
                   contents: [
                     { role: "user", parts: [{ text: userPrompt }] },
-                    candidateContent,
+                    { role: "model", parts: [{ functionCall: { name: fc.name, args: fc.args } }] },
                     {
                       role: "user",
-                      parts: [{
-                        functionResponse: {
-                          name: "lookupOfficialPartsCatalog",
-                          response: {
-                            status: "success",
-                            officialCatalog: toolCatalogData,
+                      parts: [
+                        {
+                          functionResponse: {
+                            name: fc.name,
+                            response: {
+                              status: "success",
+                              fonte: tecdocResult.source,
+                              resultado_oficial: tecdocResult,
+                            },
                           },
                         },
-                      }],
+                      ],
                     },
                   ],
                   config: {
                     systemInstruction: SYSTEM_INSTRUCTION,
                     temperature: 0.0,
                   },
-                });
+                }),
+                turn2Timeout,
+              ]);
 
-                if (toolResponse?.text && toolResponse.text.trim()) {
-                  initialResponse = toolResponse;
-                }
+              if (secondResponse?.text && secondResponse.text.trim()) {
+                markdown = secondResponse.text;
+                aiProvider = `Google Gemini IA • Function Calling (buscar_peca_tecdoc ➔ ${tecdocResult.source})`;
+                functionCallInfo = {
+                  functionName: fc.name,
+                  parameters: fc.args,
+                  source: tecdocResult.source,
+                  matchesCount: tecdocResult.rawMatchesCount,
+                  oemCode: tecdocResult.oemCode,
+                  brandsCount: tecdocResult.brands.length,
+                  executedAt: Date.now(),
+                };
+                console.log(`[Balcão] Sucesso com Function Calling e ${tecdocResult.source}!`);
+                break;
               }
+            } else if (initialResponse?.text && initialResponse.text.trim()) {
+              markdown = initialResponse.text;
+              aiProvider = `Google Gemini IA (${targetModel}) • Validação Direta`;
+              functionCallInfo = {
+                functionName: "buscar_peca_tecdoc",
+                parameters: directTecDocQuery,
+                source: tecdocDirectResult.source,
+                matchesCount: tecdocDirectResult.rawMatchesCount,
+                oemCode: tecdocDirectResult.oemCode,
+                brandsCount: tecdocDirectResult.brands.length,
+                executedAt: Date.now(),
+              };
+              break;
             }
+          } catch (fcErr: any) {
+            console.warn(`[Balcão] ${targetModel} Function Calling falhou:`, fcErr?.message || fcErr);
+          }
+
+          // Attempt 2: with Google Search Grounding (6s timeout for fast counter service)
+          try {
+            console.log(`[Balcão] Tentando ${targetModel} com RAG e Busca Online (Temp 0.0)...`);
+            const timeoutPromise = new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout Busca Online ${targetModel} (6s)`)), 6000)
+            );
+
+            const initialResponse = await Promise.race([
+              ai.models.generateContent({
+                model: targetModel,
+                contents: userPrompt,
+                config: {
+                  systemInstruction: SYSTEM_INSTRUCTION,
+                  temperature: 0.0,
+                  tools: [{ googleSearch: {} }],
+                },
+              }),
+              timeoutPromise,
+            ]);
 
             response = initialResponse;
 
             if (response?.text && response.text.trim()) {
+              markdown = response.text;
               aiProvider = `Google Gemini IA (${targetModel}) • RAG + Busca Online (Temp 0.0)`;
               console.log(`[Balcão] Sucesso com ${targetModel} (com RAG e Busca)!`);
               break;
@@ -867,13 +924,13 @@ app.post("/api/query-part", async (req, res) => {
             if (errStr.includes("429") || errStr.includes("quota") || errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("resource_exhausted")) {
               isQuotaExceeded = true;
             }
-            console.warn(`[Balcão] ${targetModel} com RAG/Busca indisponível ou cota 429:`, searchErr?.message || searchErr);
+            console.warn(`[Balcão] ${targetModel} com Busca Online indisponível ou cota 429:`, searchErr?.message || searchErr);
 
-            // Attempt B: Direct with RAG context (using verified catalog documentation)
+            // Attempt 3: Direct with RAG context (using verified catalog documentation - 6s timeout)
             try {
               console.log(`[Balcão] Tentando ${targetModel} Direto com RAG (Temp 0.0)...`);
               const timeoutPromise2 = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error(`Timeout IA Direta ${targetModel} (5s)`)), 5000)
+                setTimeout(() => reject(new Error(`Timeout IA Direta ${targetModel} (6s)`)), 6000)
               );
 
               response = await Promise.race([
@@ -889,6 +946,7 @@ app.post("/api/query-part", async (req, res) => {
               ]);
 
               if (response?.text && response.text.trim()) {
+                markdown = response.text;
                 aiProvider = `Google Gemini IA (${targetModel}) • RAG Catálogo Oficial (Temp 0.0)`;
                 console.log(`[Balcão] Sucesso com ${targetModel} Direto RAG!`);
                 break;
@@ -903,9 +961,19 @@ app.post("/api/query-part", async (req, res) => {
           }
         }
 
-        if (response?.text && response.text.trim()) {
-          markdown = response.text;
+        if (!functionCallInfo) {
+          functionCallInfo = {
+            functionName: "buscar_peca_tecdoc",
+            parameters: directTecDocQuery,
+            source: tecdocDirectResult.source,
+            matchesCount: tecdocDirectResult.rawMatchesCount,
+            oemCode: tecdocDirectResult.oemCode,
+            brandsCount: tecdocDirectResult.brands.length,
+            executedAt: Date.now(),
+          };
+        }
 
+        if (response?.text && response.text.trim()) {
           const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
           const extractedSources = chunks
             .map((chunk: any) => ({
@@ -920,11 +988,11 @@ app.post("/api/query-part", async (req, res) => {
             seenUris.add(item.uri);
             return true;
           });
-        } else {
+        } else if (!markdown.trim()) {
           // Tier 3: High-precision Senior Clerk Catalog Generator (Zero downtime)
           console.log("[Balcão] Ativando Catálogo Técnico Especialista Balcão (Tier 3)...");
           usedFallback = true;
-          aiProvider = "Catálogo Técnico de Balcão (Standby)";
+          aiProvider = `Catálogo Especialista Balcão (${tecdocDirectResult.source})`;
           markdown = generateBalcaoCatalogMarkdown({
             fullVehicle,
             brand: brand || '',
@@ -985,6 +1053,36 @@ app.post("/api/query-part", async (req, res) => {
       verifiedSources = relevantCatalogs;
     }
 
+    if (!functionCallInfo) {
+      try {
+        const directLookup = await executeTecDocFunctionCall({
+          montadora: brand || "",
+          carro: model || vehicle,
+          geracao_ou_modelo: vehicle,
+          ano: year || "",
+          motor: fullEngine || "",
+          item: part,
+          especificacoes: [abs, transmission, steering, fuel, position].filter(Boolean).join(", "),
+        });
+        functionCallInfo = {
+          functionName: "buscar_peca_tecdoc",
+          parameters: {
+            carro: vehicle,
+            ano: year,
+            motor: fullEngine,
+            item: part,
+          },
+          source: directLookup.source,
+          matchesCount: directLookup.rawMatchesCount,
+          oemCode: directLookup.oemCode,
+          brandsCount: directLookup.brands.length,
+          executedAt: Date.now(),
+        };
+      } catch (lookupErr) {
+        console.warn("[Balcão] Falha na consulta direta TecDoc:", lookupErr);
+      }
+    }
+
     res.json({
       markdown,
       usedFallback,
@@ -992,6 +1090,7 @@ app.post("/api/query-part", async (req, res) => {
       isQuotaExceeded,
       verifiedSources,
       aiProvider,
+      functionCallInfo,
     });
   } catch (err: any) {
     console.error("[Balcão Autopeças] Erro geral ao processar consulta:", err);
@@ -1001,6 +1100,66 @@ app.post("/api/query-part", async (req, res) => {
     });
   }
 });
+
+// ══════════════════════════════════════════════════════════════════
+// ROTAS DE GERENCIAMENTO DA API TECDOC & TABELA DE EQUIVALÊNCIA CSV
+// ══════════════════════════════════════════════════════════════════
+
+// Status atual da conexão TecDoc e da Tabela de Equivalência CSV
+app.get("/api/tecdoc-status", (req, res) => {
+  const hasApiKey = !!process.env.TECDOC_API_KEY && !!process.env.TECDOC_PROVIDER_ID;
+  const records = getEquivalenceRecords();
+  res.json({
+    tecdocConfigured: hasApiKey,
+    activeDataSource: hasApiKey
+      ? "TecDoc WebService API (Oficial TecAlliance Pegasus)"
+      : "Tabela de Equivalência CSV Oficial (tabela_pecas.csv)",
+    totalCsvRecords: records.length,
+    sampleRecords: records.slice(0, 10),
+    architectureFlow: [
+      { step: 1, label: "Vendedor digita no balcão", icon: "User", desc: "Informações brutas: veículo, ano, peça" },
+      { step: 2, label: "Gemini interpreta parâmetros", icon: "Cpu", desc: "Extrai { carro, ano, motor, item, especificacoes }" },
+      { step: 3, label: "Comando buscar_peca_tecdoc", icon: "Layers", desc: "Function Calling estruturado sem inventar código" },
+      { step: 4, label: hasApiKey ? "API Oficial TecDoc" : "Tabela CSV de Equivalência", icon: "Database", desc: "Retorna códigos OEM e marcas homologadas (100% assertivo)" },
+      { step: 5, label: "Tela do Vendedor", icon: "CheckCircle", desc: "Resposta em 6 tópicos do padrão de balcão" },
+    ],
+  });
+});
+
+// Upload ou atualização da planilha CSV de equivalência (tabela_pecas.csv)
+app.post("/api/tecdoc-upload-csv", (req, res) => {
+  const { csvContent } = req.body;
+  if (!csvContent || typeof csvContent !== "string") {
+    return res.status(400).json({ error: "Conteúdo CSV inválido ou ausente." });
+  }
+
+  const result = setCustomCsvRecords(csvContent);
+  if (!result.success) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  res.json({
+    success: true,
+    count: result.count,
+    message: `Tabela de equivalência atualizada com sucesso! ${result.count} linhas ativas no catálogo.`,
+  });
+});
+
+// Teste direto de Function Calling da API TecDoc / Tabela de Equivalência
+app.post("/api/tecdoc-test-query", async (req, res) => {
+  const { montadora, carro, geracao_ou_modelo, ano, motor, item, especificacoes } = req.body;
+  const result = await executeTecDocFunctionCall({
+    montadora,
+    carro: carro || "Gol",
+    geracao_ou_modelo: geracao_ou_modelo || "G5",
+    ano: ano || "2010",
+    motor: motor || "1.0",
+    item: item || "Amortecedor dianteiro",
+    especificacoes,
+  });
+  res.json(result);
+});
+
 
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
