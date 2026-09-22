@@ -622,7 +622,7 @@ app.get("/api/health", (req, res) => {
 
 let geminiCooldownUntil = 0;
 
-app.post("/api/query-part", async (req, res) => {
+app.post(["/api/query-part", "/api/consultar-peca"], async (req, res) => {
   try {
     const {
       vehicle,
@@ -791,110 +791,31 @@ app.post("/api/query-part", async (req, res) => {
         const tecdocDirectResult = await executeTecDocFunctionCall(directTecDocQuery);
 
         let response: any = null;
-        functionCallInfo = null;
-        aiProvider = "Google Gemini IA • Catálogos Oficiais (RAG + Busca Online)";
+        functionCallInfo = {
+          functionName: "google_search_grounding",
+          parameters: {
+            part,
+            vehicle: fullVehicle,
+            year: year || "",
+            engine: fullEngine || "",
+          },
+          source: "Google Search Grounding (Web em Tempo Real) + Catálogos Oficiais",
+          matchesCount: tecdocDirectResult.rawMatchesCount,
+          oemCode: tecdocDirectResult.oemCode,
+          brandsCount: 44,
+          executedAt: Date.now(),
+        };
+
+        aiProvider = "Google Gemini IA • Grounding with Google Search (Catálogos Web em Tempo Real)";
         const candidateModels = ["gemini-2.5-flash"];
 
         for (const targetModel of candidateModels) {
           if (markdown.trim()) break;
 
-          // Attempt 1: Official Function Calling (buscar_peca_tecdoc) -> 100% Assertiveness architecture
+          // Etapa 1 (Principal): Google Search Grounding em tempo real
           try {
-            console.log(`[Balcão] Tentando ${targetModel} com Function Calling (buscar_peca_tecdoc)...`);
-            const fcTimeout = new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error(`Timeout Function Calling ${targetModel} (6s)`)), 6000)
-            );
-
-            const initialResponse = await Promise.race([
-              ai.models.generateContent({
-                model: targetModel,
-                contents: userPrompt,
-                config: {
-                  systemInstruction: SYSTEM_INSTRUCTION,
-                  temperature: 0.0,
-                  tools: [{ functionDeclarations: [buscarPecaTecdocTool] }],
-                },
-              }),
-              fcTimeout,
-            ]);
-
-            if (initialResponse?.functionCalls && initialResponse.functionCalls.length > 0) {
-              const fc = initialResponse.functionCalls[0];
-              console.log(`[Balcão] Function Call emitida pelo Gemini: ${fc.name}`, fc.args);
-              const tecdocResult = await executeTecDocFunctionCall(fc.args as any);
-
-              // Call second turn to format the 6-topic response with verified data
-              const turn2Timeout = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error(`Timeout Turno 2 ${targetModel} (6s)`)), 6000)
-              );
-
-              const secondResponse = await Promise.race([
-                ai.models.generateContent({
-                  model: targetModel,
-                  contents: [
-                    { role: "user", parts: [{ text: userPrompt }] },
-                    { role: "model", parts: [{ functionCall: { name: fc.name, args: fc.args } }] },
-                    {
-                      role: "user",
-                      parts: [
-                        {
-                          functionResponse: {
-                            name: fc.name,
-                            response: {
-                              status: "success",
-                              fonte: tecdocResult.source,
-                              resultado_oficial: tecdocResult,
-                            },
-                          },
-                        },
-                      ],
-                    },
-                  ],
-                  config: {
-                    systemInstruction: SYSTEM_INSTRUCTION,
-                    temperature: 0.0,
-                  },
-                }),
-                turn2Timeout,
-              ]);
-
-              if (secondResponse?.text && secondResponse.text.trim()) {
-                markdown = secondResponse.text;
-                aiProvider = `Google Gemini IA • Function Calling (buscar_peca_tecdoc ➔ ${tecdocResult.source})`;
-                functionCallInfo = {
-                  functionName: fc.name,
-                  parameters: fc.args,
-                  source: tecdocResult.source,
-                  matchesCount: tecdocResult.rawMatchesCount,
-                  oemCode: tecdocResult.oemCode,
-                  brandsCount: tecdocResult.brands.length,
-                  executedAt: Date.now(),
-                };
-                console.log(`[Balcão] Sucesso com Function Calling e ${tecdocResult.source}!`);
-                break;
-              }
-            } else if (initialResponse?.text && initialResponse.text.trim()) {
-              markdown = initialResponse.text;
-              aiProvider = `Google Gemini IA (${targetModel}) • Validação Direta`;
-              functionCallInfo = {
-                functionName: "buscar_peca_tecdoc",
-                parameters: directTecDocQuery,
-                source: tecdocDirectResult.source,
-                matchesCount: tecdocDirectResult.rawMatchesCount,
-                oemCode: tecdocDirectResult.oemCode,
-                brandsCount: tecdocDirectResult.brands.length,
-                executedAt: Date.now(),
-              };
-              break;
-            }
-          } catch (fcErr: any) {
-            console.warn(`[Balcão] ${targetModel} Function Calling falhou:`, fcErr?.message || fcErr);
-          }
-
-          // Attempt 2: with Google Search Grounding (6s timeout for fast counter service)
-          try {
-            console.log(`[Balcão] Tentando ${targetModel} com RAG e Busca Online (Temp 0.0)...`);
-            const timeoutPromise = new Promise<never>((_, reject) =>
+            console.log(`[Balcão] Executando ${targetModel} com Google Search Grounding em tempo real...`);
+            const searchTimeout = new Promise<never>((_, reject) =>
               setTimeout(() => reject(new Error(`Timeout Busca Online ${targetModel} (6s)`)), 6000)
             );
 
@@ -908,15 +829,15 @@ app.post("/api/query-part", async (req, res) => {
                   tools: [{ googleSearch: {} }],
                 },
               }),
-              timeoutPromise,
+              searchTimeout,
             ]);
 
             response = initialResponse;
 
             if (response?.text && response.text.trim()) {
               markdown = response.text;
-              aiProvider = `Google Gemini IA (${targetModel}) • RAG + Busca Online (Temp 0.0)`;
-              console.log(`[Balcão] Sucesso com ${targetModel} (com RAG e Busca)!`);
+              aiProvider = `Google Gemini IA (${targetModel}) • Grounding com Google Search`;
+              console.log(`[Balcão] Sucesso na busca online com ${targetModel}!`);
               break;
             }
           } catch (searchErr: any) {
@@ -924,13 +845,13 @@ app.post("/api/query-part", async (req, res) => {
             if (errStr.includes("429") || errStr.includes("quota") || errStr.includes("RESOURCE_EXHAUSTED") || errStr.includes("resource_exhausted")) {
               isQuotaExceeded = true;
             }
-            console.warn(`[Balcão] ${targetModel} com Busca Online indisponível ou cota 429:`, searchErr?.message || searchErr);
+            console.warn(`[Balcão] ${targetModel} com Busca Online indisponível ou timeout (>6s):`, searchErr?.message || searchErr);
 
-            // Attempt 3: Direct with RAG context (using verified catalog documentation - 6s timeout)
+            // Etapa 2 (Fallback 1): Tentativa direta com contexto RAG de alta fidelidade
             try {
               console.log(`[Balcão] Tentando ${targetModel} Direto com RAG (Temp 0.0)...`);
-              const timeoutPromise2 = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error(`Timeout IA Direta ${targetModel} (6s)`)), 6000)
+              const directTimeout = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error(`Timeout IA Direta ${targetModel} (4s)`)), 4000)
               );
 
               response = await Promise.race([
@@ -942,7 +863,7 @@ app.post("/api/query-part", async (req, res) => {
                     temperature: 0.0,
                   },
                 }),
-                timeoutPromise2,
+                directTimeout,
               ]);
 
               if (response?.text && response.text.trim()) {

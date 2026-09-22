@@ -12,7 +12,6 @@ import {
   Disc,
   Gauge,
   Compass,
-  Flame,
   Snowflake,
   Fuel,
   RotateCcw,
@@ -98,11 +97,18 @@ const decomposeEngine = (eng: string): { engineSize: string; engineVersion: stri
   const trimmed = (eng || '').trim();
   if (!trimmed) return { engineSize: '', engineVersion: '' };
 
-  const match = trimmed.match(/^(\d\.\d)\s*(.*)$/);
-  if (match) {
-    return { engineSize: match[1], engineVersion: match[2] };
+  for (const sz of COMMON_ENGINE_SIZES) {
+    if (trimmed.startsWith(sz)) {
+      const rest = trimmed.slice(sz.length).trim();
+      return { engineSize: sz, engineVersion: rest };
+    }
   }
-  return { engineSize: '', engineVersion: trimmed };
+
+  const parts = trimmed.split(' ');
+  if (parts.length > 1) {
+    return { engineSize: parts[0], engineVersion: parts.slice(1).join(' ') };
+  }
+  return { engineSize: trimmed, engineVersion: '' };
 };
 
 export const QueryForm: React.FC<QueryFormProps> = ({
@@ -111,34 +117,23 @@ export const QueryForm: React.FC<QueryFormProps> = ({
   initialParams,
   onNewQuery,
 }) => {
-  // 1. Peça Solicitada
+  // Input fields
   const [part, setPart] = useState(initialParams?.part || '');
-
-  // 2. Veículo (Montadora / Marca) e 3. Modelo (Campos separados conforme solicitado)
-  const initialVehicleSplit = decomposeVehicle(initialParams?.brand ? `${initialParams.brand} ${initialParams.model || ''}` : initialParams?.vehicle || '');
-  const [brand, setBrand] = useState(initialParams?.brand || initialVehicleSplit.brand);
-  const [model, setModel] = useState(initialParams?.model || initialVehicleSplit.model);
-
-  // 4. Ano
+  const [brand, setBrand] = useState(initialParams?.brand || '');
+  const [model, setModel] = useState(initialParams?.model || '');
   const [year, setYear] = useState(initialParams?.year || '');
+  const [engineSize, setEngineSize] = useState(initialParams?.engineSize || '');
+  const [engineVersion, setEngineVersion] = useState(initialParams?.engineVersion || '');
 
-  // 5. Motorização e 6. Versão do Motor (Campos separados conforme solicitado)
-  const initialEngineSplit = decomposeEngine(initialParams?.engineSize ? `${initialParams.engineSize} ${initialParams.engineVersion || ''}` : initialParams?.engine || '');
-  const [engineSize, setEngineSize] = useState(initialParams?.engineSize || initialEngineSplit.engineSize);
-  const [engineVersion, setEngineVersion] = useState(initialParams?.engineVersion || initialEngineSplit.engineVersion);
-
-  // Filtros em formato de botões de múltipla escolha
+  // Multiple Choice Filters
   const [abs, setAbs] = useState<'com_abs' | 'sem_abs' | ''>(initialParams?.abs || '');
   const [transmission, setTransmission] = useState<'manual' | 'automatico' | 'automatizado' | ''>(initialParams?.transmission || '');
   const [steering, setSteering] = useState<'hidraulica' | 'eletrica' | 'mecanica' | ''>(initialParams?.steering || '');
-  const [fuel, setFuel] = useState<string>(initialParams?.fuel || '');
-  const [position, setPosition] = useState<string>(initialParams?.position || '');
+  const [fuel, setFuel] = useState(initialParams?.fuel || '');
+  const [position, setPosition] = useState(initialParams?.position || '');
   const [airConditioning, setAirConditioning] = useState<'com_ar' | 'sem_ar' | ''>(initialParams?.airConditioning || '');
-
-  // Observações do Balcão
   const [notes, setNotes] = useState(initialParams?.notes || '');
 
-  // Limpeza completa de todos os campos e filtros
   const handleResetAll = () => {
     setPart('');
     setBrand('');
@@ -164,7 +159,6 @@ export const QueryForm: React.FC<QueryFormProps> = ({
     }, 50);
   };
 
-  // Sync if initialParams changes - se vier null/undefined, limpa tudo imediatamente
   useEffect(() => {
     if (!initialParams) {
       setPart('');
@@ -240,11 +234,10 @@ export const QueryForm: React.FC<QueryFormProps> = ({
     setEngineVersion(eSplit.engineVersion);
     setNotes(preset.notes || '');
 
-    // Reset or set relevant filters from preset note keywords
     const noteLower = (preset.notes || '').toLowerCase();
-    const newAbs = noteLower.includes('com abs') ? 'com_abs' : noteLower.includes('sem abs') ? 'sem_abs' : '';
-    const newTrans = noteLower.includes('manual') ? 'manual' : noteLower.includes('automático') || noteLower.includes('automatico') ? 'automatico' : '';
-    const newSteer = noteLower.includes('hidráulic') || noteLower.includes('hidraulic') ? 'hidraulica' : noteLower.includes('elétric') || noteLower.includes('eletric') ? 'eletrica' : '';
+    const newAbs: 'com_abs' | 'sem_abs' | '' = noteLower.includes('com abs') ? 'com_abs' : noteLower.includes('sem abs') ? 'sem_abs' : '';
+    const newTrans: 'manual' | 'automatico' | 'automatizado' | '' = noteLower.includes('manual') ? 'manual' : noteLower.includes('automático') || noteLower.includes('automatico') ? 'automatico' : '';
+    const newSteer: 'hidraulica' | 'eletrica' | 'mecanica' | '' = noteLower.includes('hidráulic') || noteLower.includes('hidraulic') ? 'hidraulica' : noteLower.includes('elétric') || noteLower.includes('eletric') ? 'eletrica' : '';
     
     setAbs(newAbs);
     setTransmission(newTrans);
@@ -278,7 +271,6 @@ export const QueryForm: React.FC<QueryFormProps> = ({
     setAirConditioning('');
   };
 
-  // Count active multiple-choice filters
   const activeFilterCount = [
     abs !== '',
     transmission !== '',
@@ -300,24 +292,24 @@ export const QueryForm: React.FC<QueryFormProps> = ({
   );
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 sm:p-6">
+    <div className="bg-white rounded-xl border border-zinc-200 shadow-xs p-5 sm:p-6 text-zinc-900">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-100">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-5 border-b border-zinc-200">
         <div>
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Search className="w-4 h-4 text-blue-600" />
+          <h2 className="text-base font-black text-zinc-950 flex items-center gap-2">
+            <Search className="w-4 h-4 text-zinc-800" />
             Consulta Rápida de Balcão & Telefone
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Preenchimento em lista vertical com filtros de múltipla escolha para triagem instantânea.
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Formulário técnico vertical com parâmetros de aplicação e filtros rápidos.
           </p>
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
           {activeFilterCount > 0 && (
-            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-              <SlidersHorizontal className="w-3 h-3" />
-              {activeFilterCount} {activeFilterCount === 1 ? 'filtro' : 'filtros'}
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-mono font-bold bg-zinc-100 text-zinc-900 border border-zinc-300">
+              <SlidersHorizontal className="w-3 h-3 text-zinc-700" />
+              {activeFilterCount} {activeFilterCount === 1 ? 'filtro ativo' : 'filtros ativos'}
             </span>
           )}
 
@@ -326,27 +318,27 @@ export const QueryForm: React.FC<QueryFormProps> = ({
               id="btn-form-new-query"
               type="button"
               onClick={handleResetAll}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-300 hover:border-rose-300 text-xs font-semibold transition-all shadow-2xs active:scale-95"
-              title="Limpar todos os campos e filtros para nova consulta (Esc)"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border border-zinc-300 text-xs font-bold transition-all active:scale-95"
+              title="Limpar todos os campos e filtros para nova consulta"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
-              <span>Nova Consulta (Limpar)</span>
+              <RotateCcw className="w-3.5 h-3.5 text-zinc-600" />
+              <span>Limpar Formulário</span>
             </button>
           )}
         </div>
       </div>
 
       {/* Main Form - Vertical List Layout */}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-3.5">
           {/* 1. PEÇA SOLICITADA */}
-          <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 transition-all hover:border-blue-300">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-blue-700">
-                <Cog className="w-4 h-4 text-blue-600" />
+          <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 hover:border-zinc-400 transition-all">
+            <label className="block text-xs font-black text-zinc-900 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-zinc-950">
+                <Cog className="w-4 h-4 text-zinc-700" />
                 1. Peça Solicitada *
               </span>
-              <span className="text-[11px] text-slate-400 font-normal">O que o cliente pediu</span>
+              <span className="text-[11px] text-zinc-500 font-normal">O que o cliente pediu no balcão</span>
             </label>
             <input
               id="input-part"
@@ -354,13 +346,13 @@ export const QueryForm: React.FC<QueryFormProps> = ({
               required
               value={part}
               onChange={(e) => setPart(e.target.value)}
-              placeholder="Ex: Pastilha de freio dianteira, Amortecedor dianteiro, Bomba d'água..."
-              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-slate-300 focus:border-blue-600 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 text-slate-900 transition-all shadow-2xs"
+              placeholder="Ex: Pastilha de freio dianteira, Amortecedor dianteiro, Kit de embreagem, Bomba d'água..."
+              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-zinc-300 focus:border-zinc-950 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition-all placeholder:text-zinc-400"
             />
             
             {/* Quick Part Shortcuts */}
-            <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mr-1">
+            <div className="mt-2.5 pt-2 border-t border-zinc-200 flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mr-1">
                 Atalhos rápidos:
               </span>
               {COMMON_PARTS.slice(0, 8).map((cp) => (
@@ -370,8 +362,8 @@ export const QueryForm: React.FC<QueryFormProps> = ({
                   onClick={() => setPart(cp)}
                   className={`text-[11px] px-2.5 py-1 rounded-md border transition-all ${
                     part.toLowerCase() === cp.toLowerCase()
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                      ? 'bg-zinc-950 text-white border-zinc-950 font-bold'
+                      : 'bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-200'
                   }`}
                 >
                   {cp}
@@ -381,13 +373,13 @@ export const QueryForm: React.FC<QueryFormProps> = ({
           </div>
 
           {/* 2. VEÍCULO (MONTADORA / MARCA) */}
-          <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 transition-all hover:border-blue-300">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-blue-700">
-                <Car className="w-4 h-4 text-blue-600" />
-                2. Veículo (Montadora / Marca) *
+          <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 hover:border-zinc-400 transition-all">
+            <label className="block text-xs font-black text-zinc-900 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-zinc-950">
+                <Car className="w-4 h-4 text-zinc-700" />
+                2. Montadora / Fabricante *
               </span>
-              <span className="text-[11px] text-slate-400 font-normal">Ex: Chevrolet, Volkswagen, Fiat...</span>
+              <span className="text-[11px] text-zinc-500 font-normal">Ex: Chevrolet, Volkswagen, Fiat...</span>
             </label>
             <input
               id="input-vehicle-brand"
@@ -395,14 +387,14 @@ export const QueryForm: React.FC<QueryFormProps> = ({
               required
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
-              placeholder="Ex: Chevrolet, Volkswagen, Fiat, Hyundai, Toyota, Ford..."
-              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-slate-300 focus:border-blue-600 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 text-slate-900 transition-all shadow-2xs"
+              placeholder="Ex: Chevrolet, Volkswagen, Fiat, Hyundai, Toyota, Ford, Renault..."
+              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-zinc-300 focus:border-zinc-950 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition-all placeholder:text-zinc-400"
             />
 
             {/* Popular Brand Buttons */}
-            <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mr-1">
-                Marcas populares:
+            <div className="mt-2.5 pt-2 border-t border-zinc-200 flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mr-1">
+                Principais:
               </span>
               {POPULAR_BRANDS.map((b) => (
                 <button
@@ -411,8 +403,8 @@ export const QueryForm: React.FC<QueryFormProps> = ({
                   onClick={() => setBrand(b)}
                   className={`text-[11px] px-2.5 py-1 rounded-md border transition-all ${
                     brand.toLowerCase() === b.toLowerCase()
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                      ? 'bg-zinc-950 text-white border-zinc-950 font-bold'
+                      : 'bg-white hover:bg-zinc-100 text-zinc-800 border-zinc-200'
                   }`}
                 >
                   {b}
@@ -422,13 +414,13 @@ export const QueryForm: React.FC<QueryFormProps> = ({
           </div>
 
           {/* 3. MODELO DO VEÍCULO */}
-          <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 transition-all hover:border-blue-300">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-blue-700">
-                <Car className="w-4 h-4 text-blue-600" />
+          <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 hover:border-zinc-400 transition-all">
+            <label className="block text-xs font-black text-zinc-900 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-zinc-950">
+                <Car className="w-4 h-4 text-zinc-700" />
                 3. Modelo do Veículo *
               </span>
-              <span className="text-[11px] text-slate-400 font-normal">Ex: HB20, Onix, Gol, Palio, Corolla, Strada...</span>
+              <span className="text-[11px] text-zinc-500 font-normal">Ex: HB20, Onix, Gol, Palio, Corolla, Strada...</span>
             </label>
             <input
               id="input-vehicle-model"
@@ -437,18 +429,18 @@ export const QueryForm: React.FC<QueryFormProps> = ({
               value={model}
               onChange={(e) => setModel(e.target.value)}
               placeholder="Ex: HB20, Onix, Gol G5, Palio Fire, Corolla, Sandero, Strada..."
-              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-slate-300 focus:border-blue-600 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 text-slate-900 transition-all shadow-2xs"
+              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-zinc-300 focus:border-zinc-950 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition-all placeholder:text-zinc-400"
             />
           </div>
 
           {/* 4. ANO */}
-          <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 transition-all hover:border-blue-300">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-blue-700">
-                <Calendar className="w-4 h-4 text-blue-600" />
+          <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 hover:border-zinc-400 transition-all">
+            <label className="block text-xs font-black text-zinc-900 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-zinc-950">
+                <Calendar className="w-4 h-4 text-zinc-700" />
                 4. Ano / Modelo
               </span>
-              <span className="text-[11px] text-slate-400 font-normal">Ex: 2016 ou 2015/2016</span>
+              <span className="text-[11px] text-zinc-500 font-normal">Ex: 2016 ou 2015/2016</span>
             </label>
             <input
               id="input-year"
@@ -456,104 +448,97 @@ export const QueryForm: React.FC<QueryFormProps> = ({
               value={year}
               onChange={(e) => setYear(e.target.value)}
               placeholder="Ex: 2016, 2014, 2010, 2008..."
-              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-slate-300 focus:border-blue-600 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 text-slate-900 transition-all shadow-2xs"
+              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-zinc-300 focus:border-zinc-950 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition-all placeholder:text-zinc-400"
             />
           </div>
 
-          {/* 5. MOTORIZAÇÃO (CILINDRADA) */}
-          <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 transition-all hover:border-blue-300">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-blue-700">
-                <Gauge className="w-4 h-4 text-blue-600" />
-                5. Motorização (Cilindrada / Litragem)
-              </span>
-              <span className="text-[11px] text-slate-400 font-normal">Ex: 1.0, 1.4, 1.6, 2.0</span>
-            </label>
-            <input
-              id="input-engine-size"
-              type="text"
-              value={engineSize}
-              onChange={(e) => setEngineSize(e.target.value)}
-              placeholder="Ex: 1.0, 1.3, 1.4, 1.6, 1.8, 2.0..."
-              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-slate-300 focus:border-blue-600 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 text-slate-900 transition-all shadow-2xs"
-            />
+          {/* 5. MOTORIZAÇÃO (CILINDRADA) & VERSÃO */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 hover:border-zinc-400 transition-all">
+              <label className="block text-xs font-black text-zinc-900 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-zinc-950">
+                  <Gauge className="w-4 h-4 text-zinc-700" />
+                  5. Cilindrada / Litragem
+                </span>
+                <span className="text-[11px] text-zinc-500 font-normal">Ex: 1.0, 1.4, 1.6</span>
+              </label>
+              <input
+                id="input-engine-size"
+                type="text"
+                value={engineSize}
+                onChange={(e) => setEngineSize(e.target.value)}
+                placeholder="Ex: 1.0, 1.4, 1.6, 2.0..."
+                className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-zinc-300 focus:border-zinc-950 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition-all placeholder:text-zinc-400"
+              />
 
-            {/* Quick Engine Size Buttons */}
-            <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mr-1">
-                Litragem rápida:
-              </span>
-              {COMMON_ENGINE_SIZES.map((sz) => (
-                <button
-                  key={sz}
-                  type="button"
-                  onClick={() => setEngineSize(sz)}
-                  className={`text-[11px] px-2.5 py-1 rounded-md border transition-all ${
-                    engineSize === sz
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
-                  }`}
-                >
-                  {sz}
-                </button>
-              ))}
+              <div className="mt-2 pt-2 border-t border-zinc-200 flex flex-wrap items-center gap-1">
+                {COMMON_ENGINE_SIZES.slice(0, 7).map((sz) => (
+                  <button
+                    key={sz}
+                    type="button"
+                    onClick={() => setEngineSize(sz)}
+                    className={`text-[11px] px-2 py-0.5 rounded border transition-all ${
+                      engineSize === sz
+                        ? 'bg-zinc-950 text-white border-zinc-950 font-bold'
+                        : 'bg-white hover:bg-zinc-100 text-zinc-700 border-zinc-200'
+                    }`}
+                  >
+                    {sz}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* 6. VERSÃO DO MOTOR / VÁLVULAS */}
-          <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 transition-all hover:border-blue-300">
-            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-blue-700">
-                <Gauge className="w-4 h-4 text-blue-600" />
-                6. Versão do Motor / Válvulas / Família
-              </span>
-              <span className="text-[11px] text-slate-400 font-normal">Ex: 8V, 16V, 12V 3 Cil, Firefly, EA111, Turbo</span>
-            </label>
-            <input
-              id="input-engine-version"
-              type="text"
-              value={engineVersion}
-              onChange={(e) => setEngineVersion(e.target.value)}
-              placeholder="Ex: 8V Flex, 16V, 12V 3 Cilindros, Firefly, EA111, Turbo/TSI, Dual VVT-i..."
-              className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-slate-300 focus:border-blue-600 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 text-slate-900 transition-all shadow-2xs"
-            />
+            <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 hover:border-zinc-400 transition-all">
+              <label className="block text-xs font-black text-zinc-900 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+                <span className="flex items-center gap-1.5 text-zinc-950">
+                  <Gauge className="w-4 h-4 text-zinc-700" />
+                  6. Válvulas / Família Motor
+                </span>
+                <span className="text-[11px] text-zinc-500 font-normal">Ex: 8V, 16V, Firefly</span>
+              </label>
+              <input
+                id="input-engine-version"
+                type="text"
+                value={engineVersion}
+                onChange={(e) => setEngineVersion(e.target.value)}
+                placeholder="Ex: 8V Flex, 16V, 12V 3 Cilindros, Firefly..."
+                className="w-full text-sm font-medium px-3.5 py-2.5 bg-white border border-zinc-300 focus:border-zinc-950 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition-all placeholder:text-zinc-400"
+              />
 
-            {/* Quick Engine Version Buttons */}
-            <div className="mt-2 pt-2 border-t border-slate-200/60 flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mr-1">
-                Versões comuns:
-              </span>
-              {COMMON_ENGINE_VERSIONS.map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setEngineVersion(v)}
-                  className={`text-[11px] px-2.5 py-1 rounded-md border transition-all ${
-                    engineVersion === v
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
-                  }`}
-                >
-                  {v}
-                </button>
-              ))}
+              <div className="mt-2 pt-2 border-t border-zinc-200 flex flex-wrap items-center gap-1">
+                {['8V Flex', '16V Flex', '12V 3 Cil', 'Firefly'].map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setEngineVersion(v)}
+                    className={`text-[11px] px-2 py-0.5 rounded border transition-all ${
+                      engineVersion === v
+                        ? 'bg-zinc-950 text-white border-zinc-950 font-bold'
+                        : 'bg-white hover:bg-zinc-100 text-zinc-700 border-zinc-200'
+                    }`}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 7. BOTÕES DE MÚLTIPLA ESCOLHA (INFORMAÇÕES DO CARRO) */}
-        <div className="bg-gradient-to-br from-blue-50/50 via-slate-50 to-indigo-50/30 rounded-xl p-5 border-2 border-blue-200/70 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-blue-100 pb-3">
+        {/* 7. BOTÕES DE MÚLTIPLA ESCOLHA (FILTROS TÉCNICOS) */}
+        <div className="bg-zinc-100 rounded-xl p-4 sm:p-5 border border-zinc-300 space-y-4">
+          <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-2xs">
+              <div className="w-7 h-7 rounded-lg bg-zinc-950 text-white flex items-center justify-center">
                 <SlidersHorizontal className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Filtros Técnicos do Veículo (Botões de Múltipla Escolha)
+                <h3 className="text-sm font-black text-zinc-950">
+                  Filtros Técnicos de Aplicação (Múltipla Escolha)
                 </h3>
-                <p className="text-[11px] text-slate-600">
-                  Selecione as opções do carro para a IA fechar a aplicação correta sem fazer perguntas extras.
+                <p className="text-[11px] text-zinc-600">
+                  Defina os detalhes opcionais para fechar a aplicação sem pendências.
                 </p>
               </div>
             </div>
@@ -561,7 +546,7 @@ export const QueryForm: React.FC<QueryFormProps> = ({
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="text-xs text-slate-500 hover:text-rose-600 flex items-center gap-1 font-medium transition-colors"
+                className="text-xs text-zinc-600 hover:text-zinc-950 flex items-center gap-1 font-bold transition-colors"
               >
                 <RotateCcw className="w-3 h-3" />
                 Limpar opções
@@ -569,16 +554,16 @@ export const QueryForm: React.FC<QueryFormProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* FILTRO 1: SISTEMA DE FREIO (ABS) */}
-            <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {/* ABS */}
+            <div className="bg-white p-3 rounded-lg border border-zinc-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Disc className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                  <Disc className="w-3.5 h-3.5 text-zinc-700" />
                   Sistema de Freio (ABS)
                 </span>
                 {abs && (
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-mono font-bold text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
                     {abs === 'com_abs' ? 'Com ABS' : 'Sem ABS'}
                   </span>
                 )}
@@ -587,171 +572,110 @@ export const QueryForm: React.FC<QueryFormProps> = ({
                 <button
                   type="button"
                   onClick={() => setAbs('')}
-                  className={`text-xs py-2 px-1.5 rounded-md border font-medium transition-all text-center ${
-                    abs === ''
-                      ? 'bg-slate-200 text-slate-800 border-slate-300 font-bold'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  className={`text-xs py-1.5 rounded border font-medium ${
+                    abs === '' ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
                   }`}
                 >
-                  Indiferente
+                  Indif.
                 </button>
                 <button
                   type="button"
                   onClick={() => setAbs('com_abs')}
-                  className={`text-xs py-2 px-1.5 rounded-md border font-medium transition-all text-center ${
-                    abs === 'com_abs'
-                      ? 'bg-emerald-600 text-white border-emerald-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
+                  className={`text-xs py-1.5 rounded border font-medium ${
+                    abs === 'com_abs' ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
                   }`}
                 >
-                  🟢 Com ABS
+                  Com ABS
                 </button>
                 <button
                   type="button"
                   onClick={() => setAbs('sem_abs')}
-                  className={`text-xs py-2 px-1.5 rounded-md border font-medium transition-all text-center ${
-                    abs === 'sem_abs'
-                      ? 'bg-amber-600 text-white border-amber-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-amber-50 hover:text-amber-700'
+                  className={`text-xs py-1.5 rounded border font-medium ${
+                    abs === 'sem_abs' ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
                   }`}
                 >
-                  ⚪ Sem ABS
+                  Sem ABS
                 </button>
               </div>
             </div>
 
-            {/* FILTRO 2: CÂMBIO / TRANSMISSÃO */}
-            <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+            {/* CÂMBIO */}
+            <div className="bg-white p-3 rounded-lg border border-zinc-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Cog className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                  <Cog className="w-3.5 h-3.5 text-zinc-700" />
                   Câmbio / Transmissão
                 </span>
                 {transmission && (
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded capitalize">
+                  <span className="text-[10px] font-mono font-bold text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200 capitalize">
                     {transmission}
                   </span>
                 )}
               </div>
               <div className="grid grid-cols-4 gap-1">
-                <button
-                  type="button"
-                  onClick={() => setTransmission('')}
-                  className={`text-[11px] py-2 px-1 rounded-md border font-medium transition-all text-center truncate ${
-                    transmission === ''
-                      ? 'bg-slate-200 text-slate-800 border-slate-300 font-bold'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  Indiferente
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTransmission('manual')}
-                  className={`text-[11px] py-2 px-1 rounded-md border font-medium transition-all text-center ${
-                    transmission === 'manual'
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:text-blue-700'
-                  }`}
-                >
-                  Manual
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTransmission('automatico')}
-                  className={`text-[11px] py-2 px-1 rounded-md border font-medium transition-all text-center ${
-                    transmission === 'automatico'
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:text-blue-700'
-                  }`}
-                >
-                  Automático
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTransmission('automatizado')}
-                  className={`text-[11px] py-2 px-1 rounded-md border font-medium transition-all text-center truncate ${
-                    transmission === 'automatizado'
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:text-blue-700'
-                  }`}
-                  title="Dualogic, I-Motion, Easytronic"
-                >
-                  Automatz.
-                </button>
+                {[
+                  { id: '', label: 'Indif.' },
+                  { id: 'manual', label: 'Manual' },
+                  { id: 'automatico', label: 'Autom.' },
+                  { id: 'automatizado', label: 'Robô' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTransmission(t.id as any)}
+                    className={`text-xs py-1.5 rounded border font-medium truncate ${
+                      transmission === t.id ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* FILTRO 3: DIREÇÃO */}
-            <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+            {/* DIREÇÃO */}
+            <div className="bg-white p-3 rounded-lg border border-zinc-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Compass className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-700" />
                   Sistema de Direção
                 </span>
                 {steering && (
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded capitalize">
+                  <span className="text-[10px] font-mono font-bold text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200 capitalize">
                     {steering}
                   </span>
                 )}
               </div>
               <div className="grid grid-cols-4 gap-1">
-                <button
-                  type="button"
-                  onClick={() => setSteering('')}
-                  className={`text-[11px] py-2 px-1 rounded-md border font-medium transition-all text-center truncate ${
-                    steering === ''
-                      ? 'bg-slate-200 text-slate-800 border-slate-300 font-bold'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  Indiferente
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSteering('hidraulica')}
-                  className={`text-[11px] py-2 px-1 rounded-md border font-medium transition-all text-center ${
-                    steering === 'hidraulica'
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:text-blue-700'
-                  }`}
-                >
-                  💧 Hidráulica
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSteering('eletrica')}
-                  className={`text-[11px] py-2 px-1 rounded-md border font-medium transition-all text-center ${
-                    steering === 'eletrica'
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:text-blue-700'
-                  }`}
-                >
-                  ⚡ Elétrica
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSteering('mecanica')}
-                  className={`text-[11px] py-2 px-1 rounded-md border font-medium transition-all text-center ${
-                    steering === 'mecanica'
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:text-blue-700'
-                  }`}
-                >
-                  🔧 Mecânica
-                </button>
+                {[
+                  { id: '', label: 'Indif.' },
+                  { id: 'hidraulica', label: 'Hidrául.' },
+                  { id: 'eletrica', label: 'Elétr.' },
+                  { id: 'mecanica', label: 'Mecân.' },
+                ].map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => setSteering(st.id as any)}
+                    className={`text-xs py-1.5 rounded border font-medium truncate ${
+                      steering === st.id ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* FILTRO 4: COMBUSTÍVEL */}
-            <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+            {/* COMBUSTÍVEL */}
+            <div className="bg-white p-3 rounded-lg border border-zinc-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Fuel className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                  <Fuel className="w-3.5 h-3.5 text-zinc-700" />
                   Combustível
                 </span>
                 {fuel && (
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-mono font-bold text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
                     {fuel}
                   </span>
                 )}
@@ -762,48 +686,44 @@ export const QueryForm: React.FC<QueryFormProps> = ({
                     key={f}
                     type="button"
                     onClick={() => setFuel(f)}
-                    className={`text-xs py-1.5 px-1 rounded-md border font-medium transition-all text-center ${
-                      fuel === f
-                        ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    className={`text-xs py-1 rounded border font-medium ${
+                      fuel === f ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
                     }`}
                   >
-                    {f === '' ? 'Indiferente' : f}
+                    {f === '' ? 'Indif.' : f}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* FILTRO 5: POSIÇÃO / LADO DA PEÇA */}
-            <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+            {/* POSIÇÃO / LADO */}
+            <div className="bg-white p-3 rounded-lg border border-zinc-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Compass className="w-3.5 h-3.5 text-blue-600" />
-                  Posição / Lado da Peça
+                <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-zinc-700" />
+                  Posição / Lado
                 </span>
                 {position && (
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-mono font-bold text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
                     {position}
                   </span>
                 )}
               </div>
               <div className="grid grid-cols-3 gap-1">
                 {[
-                  { id: '', label: 'Indiferente' },
+                  { id: '', label: 'Indif.' },
                   { id: 'Dianteiro', label: 'Dianteiro' },
                   { id: 'Traseiro', label: 'Traseiro' },
-                  { id: 'Lado Direito (LD)', label: 'LD (Direito)' },
-                  { id: 'Lado Esquerdo (LE)', label: 'LE (Esquerdo)' },
-                  { id: 'Par (Ambos os lados)', label: 'Par (Ambos)' },
+                  { id: 'Lado Direito (LD)', label: 'LD' },
+                  { id: 'Lado Esquerdo (LE)', label: 'LE' },
+                  { id: 'Par (Ambos os lados)', label: 'Par' },
                 ].map((pos) => (
                   <button
                     key={pos.id}
                     type="button"
                     onClick={() => setPosition(pos.id)}
-                    className={`text-xs py-1.5 px-1 rounded-md border font-medium transition-all text-center truncate ${
-                      position === pos.id
-                        ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    className={`text-xs py-1 rounded border font-medium truncate ${
+                      position === pos.id ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
                     }`}
                   >
                     {pos.label}
@@ -812,15 +732,15 @@ export const QueryForm: React.FC<QueryFormProps> = ({
               </div>
             </div>
 
-            {/* FILTRO 6: AR-CONDICIONADO */}
-            <div className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-2xs space-y-2">
+            {/* AR CONDICIONADO */}
+            <div className="bg-white p-3 rounded-lg border border-zinc-200 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Snowflake className="w-3.5 h-3.5 text-blue-600" />
+                <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                  <Snowflake className="w-3.5 h-3.5 text-zinc-700" />
                   Ar-Condicionado
                 </span>
                 {airConditioning && (
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] font-mono font-bold text-zinc-900 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">
                     {airConditioning === 'com_ar' ? 'Com Ar' : 'Sem Ar'}
                   </span>
                 )}
@@ -829,35 +749,29 @@ export const QueryForm: React.FC<QueryFormProps> = ({
                 <button
                   type="button"
                   onClick={() => setAirConditioning('')}
-                  className={`text-xs py-2 px-1.5 rounded-md border font-medium transition-all text-center ${
-                    airConditioning === ''
-                      ? 'bg-slate-200 text-slate-800 border-slate-300 font-bold'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  className={`text-xs py-1.5 rounded border font-medium ${
+                    airConditioning === '' ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
                   }`}
                 >
-                  Indiferente
+                  Indif.
                 </button>
                 <button
                   type="button"
                   onClick={() => setAirConditioning('com_ar')}
-                  className={`text-xs py-2 px-1.5 rounded-md border font-medium transition-all text-center ${
-                    airConditioning === 'com_ar'
-                      ? 'bg-blue-600 text-white border-blue-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-blue-50 hover:text-blue-700'
+                  className={`text-xs py-1.5 rounded border font-medium ${
+                    airConditioning === 'com_ar' ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
                   }`}
                 >
-                  ❄️ Com Ar
+                  Com Ar
                 </button>
                 <button
                   type="button"
                   onClick={() => setAirConditioning('sem_ar')}
-                  className={`text-xs py-2 px-1.5 rounded-md border font-medium transition-all text-center ${
-                    airConditioning === 'sem_ar'
-                      ? 'bg-amber-600 text-white border-amber-600 font-bold shadow-2xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-amber-50 hover:text-amber-700'
+                  className={`text-xs py-1.5 rounded border font-medium ${
+                    airConditioning === 'sem_ar' ? 'bg-zinc-950 text-white font-bold' : 'bg-zinc-50 text-zinc-700 hover:bg-zinc-100 border-zinc-200'
                   }`}
                 >
-                  ☀️ Sem Ar
+                  Sem Ar
                 </button>
               </div>
             </div>
@@ -865,30 +779,30 @@ export const QueryForm: React.FC<QueryFormProps> = ({
         </div>
 
         {/* 8. OBSERVAÇÕES ADICIONAIS DO BALCÃO */}
-        <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 transition-all hover:border-blue-300">
-          <label className="block text-xs font-bold text-slate-800 uppercase tracking-wide mb-1.5 flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-slate-700">
-              <FileText className="w-4 h-4 text-slate-500" />
+        <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 hover:border-zinc-400 transition-all">
+          <label className="block text-xs font-black text-zinc-900 uppercase tracking-wide mb-1.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-zinc-950">
+              <FileText className="w-4 h-4 text-zinc-700" />
               Observações Adicionais do Balcão (opcional)
             </span>
-            <span className="text-[11px] text-slate-400 font-normal">Ex: Cliente com amostra, código gravado antigo...</span>
+            <span className="text-[11px] text-zinc-500 font-normal">Ex: Amostra na mão, gravado na peça...</span>
           </label>
           <input
             id="input-notes"
             type="text"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Ex: Cliente trouxe pastilha gasta na mão; verificar se é sistema Teves ou Mando..."
-            className="w-full text-xs px-3.5 py-2.5 bg-white border border-slate-300 focus:border-blue-600 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-blue-500 text-slate-800 transition-all shadow-2xs"
+            placeholder="Ex: Cliente com pastilha gasta na bancada, conferir se é sistema Teves ou Mando..."
+            className="w-full text-xs px-3.5 py-2.5 bg-white border border-zinc-300 focus:border-zinc-950 rounded-lg focus:outline-hidden focus:ring-1 focus:ring-zinc-950 text-zinc-900 transition-all placeholder:text-zinc-400"
           />
         </div>
 
         {/* SUBMIT BUTTON BAR */}
         <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-xs text-slate-600">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-xs animate-pulse"></span>
+          <div className="flex items-center gap-2 text-xs text-zinc-600">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-zinc-950 shrink-0"></span>
             <span>
-              A <strong>IA do Google</strong> pesquisará nos catálogos oficiais (Nakata, Cobreq, Fras-le, Bosch, Cofap, LUK...) aplicando todos os filtros selecionados.
+              A busca pesquisa nos catálogos oficiais das <strong>44 marcas parceiras</strong> e gera os 6 tópicos do balcão.
             </span>
           </div>
 
@@ -899,11 +813,10 @@ export const QueryForm: React.FC<QueryFormProps> = ({
                 type="button"
                 onClick={handleResetAll}
                 disabled={isLoading}
-                className="w-full sm:w-auto px-4 py-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 hover:border-rose-300 text-slate-700 hover:text-rose-700 font-semibold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs active:scale-95 disabled:opacity-50"
-                title="Limpar todos os campos e filtros para nova consulta (Esc)"
+                className="w-full sm:w-auto px-4 py-3 bg-zinc-100 hover:bg-zinc-200 border border-zinc-300 text-zinc-800 font-bold text-xs sm:text-sm rounded-xl transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
               >
-                <RotateCcw className="w-4 h-4 text-slate-500" />
-                <span>Limpar Tudo</span>
+                <RotateCcw className="w-4 h-4 text-zinc-600" />
+                <span>Limpar</span>
               </button>
             )}
 
@@ -911,18 +824,18 @@ export const QueryForm: React.FC<QueryFormProps> = ({
               id="btn-submit-query"
               type="submit"
               disabled={isLoading || !part.trim() || (!model.trim() && !brand.trim())}
-              className="w-full sm:w-auto px-8 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2.5 disabled:cursor-not-allowed active:scale-[0.98]"
+              className="w-full sm:w-auto px-8 py-3.5 bg-zinc-950 hover:bg-zinc-800 disabled:bg-zinc-300 text-white font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2.5 disabled:cursor-not-allowed active:scale-[0.98]"
             >
               {isLoading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin text-white" />
-                  <span>IA do Google Consultando Catálogos...</span>
+                  <span>Consultando Catálogos Oficiais...</span>
                 </>
               ) : (
                 <>
-                  <Search className="w-4 h-4" />
-                  <span>Pesquisar com IA do Google nos Catálogos</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <Search className="w-4 h-4 text-zinc-100" />
+                  <span>Consultar Catálogo de Autopeças</span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </>
               )}
             </button>
@@ -930,14 +843,14 @@ export const QueryForm: React.FC<QueryFormProps> = ({
         </div>
       </form>
 
-      {/* Preset vehicle shortcuts for fast testing */}
-      <div className="mt-6 pt-5 border-t border-slate-100">
+      {/* Preset vehicle shortcuts */}
+      <div className="mt-6 pt-5 border-t border-zinc-200">
         <div className="flex items-center justify-between mb-2.5">
-          <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
-            Exemplos Reais para Demonstração Rápida no Balcão:
+          <span className="text-xs font-black text-zinc-900 flex items-center gap-1.5">
+            <Zap className="w-3.5 h-3.5 text-zinc-800" />
+            Aplicações Frequentes em Rio Claro (Carregamento Rápido):
           </span>
-          <span className="text-[10px] text-slate-400">1 clique para carregar nos campos</span>
+          <span className="text-[10px] text-zinc-500 font-mono">1 clique para preencher</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
           {COMMON_PRESETS.map((p) => (
@@ -946,12 +859,12 @@ export const QueryForm: React.FC<QueryFormProps> = ({
               type="button"
               onClick={() => handleApplyPreset(p)}
               disabled={isLoading}
-              className="text-left p-2.5 rounded-lg bg-slate-50 hover:bg-blue-50 border border-slate-200 hover:border-blue-300 transition-all text-xs group shadow-2xs"
+              className="text-left p-2.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-400 transition-all text-xs shadow-2xs"
             >
-              <div className="font-bold text-slate-800 group-hover:text-blue-700 truncate">
+              <div className="font-bold text-zinc-900 truncate">
                 {p.vehicle}
               </div>
-              <div className="text-[10px] text-slate-500 truncate mt-0.5">
+              <div className="text-[10px] text-zinc-500 truncate mt-0.5">
                 {p.part}
               </div>
             </button>

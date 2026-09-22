@@ -215,7 +215,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans antialiased">
+    <div className="min-h-screen bg-zinc-100 text-zinc-950 flex flex-col font-sans antialiased">
       {/* Top Header */}
       <Header
         onNewQuery={handleNewQuery}
@@ -223,20 +223,19 @@ export default function App() {
         onOpenTecDoc={() => setIsTecDocModalOpen(true)}
       />
 
-
       {/* Main Container */}
       <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Error Alert if any */}
         {error && (
-          <div className="bg-rose-50 border border-rose-300 rounded-xl p-4 flex items-start gap-3 shadow-xs">
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="bg-white border-2 border-zinc-950 rounded-xl p-4 flex items-start gap-3 shadow-xs">
+            <AlertCircle className="w-5 h-5 text-zinc-950 shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="text-sm font-bold text-rose-900">Atenção no Balcão</h4>
-              <p className="text-xs text-rose-700 mt-0.5">{error}</p>
+              <h4 className="text-sm font-black text-zinc-950">Atenção no Balcão</h4>
+              <p className="text-xs text-zinc-700 mt-0.5">{error}</p>
             </div>
             <button
               onClick={() => setError(null)}
-              className="text-xs font-bold text-rose-800 hover:text-rose-950 underline"
+              className="text-xs font-bold text-zinc-950 underline hover:opacity-80"
             >
               Dispensar
             </button>
@@ -256,23 +255,23 @@ export default function App() {
 
         {/* Loading Banner with real steps */}
         {isLoading && (
-          <div className="bg-white rounded-xl border border-blue-200 p-6 shadow-sm flex flex-col items-center justify-center text-center space-y-3">
+          <div className="bg-white rounded-xl border border-zinc-300 p-6 shadow-xs flex flex-col items-center justify-center text-center space-y-3">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin flex items-center justify-center" />
-              <RefreshCw className="w-5 h-5 text-blue-600 absolute inset-0 m-auto animate-pulse" />
+              <div className="w-12 h-12 rounded-full border-4 border-zinc-200 border-t-zinc-950 animate-spin flex items-center justify-center" />
+              <RefreshCw className="w-5 h-5 text-zinc-950 absolute inset-0 m-auto animate-pulse" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-800">
+              <h3 className="text-sm font-black text-zinc-950">
                 Processando Triagem de Balcão & Telefone
               </h3>
-              <p className="text-xs text-blue-600 font-medium mt-1 animate-fadeIn">
+              <p className="text-xs text-zinc-600 font-medium mt-1">
                 {loadingMessage}
               </p>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-slate-400">
+            <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono">
               <span>Balconista Sênior</span>
               <span>•</span>
-              <span>Catálogos TecDoc / SBS</span>
+              <span>44 Marcas de Reposição</span>
               <span>•</span>
               <span>Fornecedores Rio Claro - SP</span>
             </div>
@@ -294,45 +293,45 @@ export default function App() {
 
         {/* Idle Instructions / Empty State */}
         {!activeResult && !isLoading && (
-          <div className="bg-white rounded-xl border border-slate-200 p-8 text-center shadow-xs">
-            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
-              <Sparkles className="w-6 h-6" />
+          <div className="bg-white rounded-xl border border-zinc-200 p-8 text-center shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-950 text-white flex items-center justify-center mx-auto mb-3 shadow-xs">
+              <Sparkles className="w-6 h-6 text-zinc-200" />
             </div>
-            <h3 className="text-base font-bold text-slate-800">
+            <h3 className="text-base font-black text-zinc-950">
               Pronto para Atender no Balcão ou Telefone
             </h3>
-            <p className="text-xs text-slate-500 max-w-lg mx-auto mt-1 leading-relaxed">
-              Informe a peça e o veículo acima ou selecione um dos exemplos rápidos. O assistente sênior aplicará a triagem de catálogos automotivos para garantir a aplicação correta em segundos.
+            <p className="text-xs text-zinc-600 max-w-lg mx-auto mt-1 leading-relaxed">
+              Informe a peça e o veículo acima ou selecione um dos atalhos rápidos. O assistente sênior aplicará a triagem de catálogos automotivos para garantir a aplicação correta em segundos.
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto mt-6 text-left">
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+              <div className="p-3.5 rounded-lg bg-zinc-50 border border-zinc-200">
+                <div className="text-xs font-black text-zinc-950 mb-1 flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded-full bg-zinc-950 text-white text-[10px] flex items-center justify-center font-bold">1</span>
                   Regra de Triagem
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-zinc-600 leading-normal">
                   Se faltar motor ou ano que altere a peça, perguntas de confirmação serão feitas antes de fechar os códigos.
                 </p>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center font-bold">2</span>
-                  Marcas de Reposição
+              <div className="p-3.5 rounded-lg bg-zinc-50 border border-zinc-200">
+                <div className="text-xs font-black text-zinc-950 mb-1 flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded-full bg-zinc-950 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                  44 Marcas Prioritárias
                 </div>
-                <p className="text-[11px] text-slate-500">
-                  Códigos originais e marcas líderes: LUK, Nakata, Cofap, Monroe, Bosch, NGK, Mahle, Tecfil, etc.
+                <p className="text-[11px] text-zinc-600 leading-normal">
+                  Códigos originais e marcas líderes: LUK, Nakata, Monroe, Bosch, Cofap, Mahle, Tecfil, Gates, Cobreq, etc.
                 </p>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
-                <div className="text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[10px] flex items-center justify-center font-bold">3</span>
+              <div className="p-3.5 rounded-lg bg-zinc-50 border border-zinc-200">
+                <div className="text-xs font-black text-zinc-950 mb-1 flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded-full bg-zinc-950 text-white text-[10px] flex items-center justify-center font-bold">3</span>
                   Rio Claro - SP
                 </div>
-                <p className="text-[11px] text-slate-500">
-                  Indicação de distribuidores locais com entrega rápida e motoboy para não perder a venda.
+                <p className="text-[11px] text-zinc-600 leading-normal">
+                  Indicação de fornecedores locais com entrega rápida e contato direto no WhatsApp para não perder a venda.
                 </p>
               </div>
             </div>
@@ -341,15 +340,15 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-slate-400 text-xs py-4 border-t border-slate-800 mt-auto print:hidden">
+      <footer className="bg-zinc-950 text-zinc-400 text-xs py-4 border-t border-zinc-900 mt-auto print:hidden">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-200">AutoPeças Balcão Pro</span>
+            <span className="font-black text-white">AutoPeças Balcão Pro</span>
             <span>•</span>
-            <span>Especialista em Catálogos & Reposição Automotiva</span>
+            <span>Roncoli - Triagem Balcão (Rio Claro - SP)</span>
           </div>
-          <div className="text-slate-500 text-[11px]">
-            Base de dados: TecDoc, SBS e Catálogos Fabricantes • Rio Claro - SP
+          <div className="text-zinc-500 text-[11px]">
+            Base de dados: Catálogos Oficiais das 44 Fabricantes • Rio Claro - SP
           </div>
         </div>
       </footer>

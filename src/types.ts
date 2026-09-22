@@ -24,7 +24,10 @@ export interface ParsedCodeItem {
   notes?: string;
   catalogUrl?: string;
   catalogName?: string;
+  application?: string;
 }
+
+export type ReferenceCode = ParsedCodeItem;
 
 export interface VerifiedSource {
   title: string;
