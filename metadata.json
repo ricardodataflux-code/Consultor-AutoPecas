@@ -1,6 +1,6 @@
 {
-  "name": "Consulta Balcão Autopeças - Rio Claro",
-  "description": "App de consulta rápida de peças automotivas e referências para balconista sênior com triagem técnica, códigos OEM/paralelos e distribuidores de Rio Claro-SP.",
+  "name": "AutoPeças Balcão Pro • Triagem Técnica & Catálogo",
+  "description": "Sistema de triagem técnica, localização de códigos OEM/paralelos, especificações e fornecedores para vendedores de balcão de autopeças.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

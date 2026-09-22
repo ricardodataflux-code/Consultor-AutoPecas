@@ -1,112 +1,95 @@
-export interface QueryParams {
-  vehicle: string;
-  brand?: string;
-  model?: string;
-  year: string;
+export interface SearchQuery {
   part: string;
+  model: string;
+  year?: string;
   engine?: string;
-  engineSize?: string;
-  engineVersion?: string;
-  abs?: 'com_abs' | 'sem_abs' | '';
   transmission?: 'manual' | 'automatico' | 'automatizado' | '';
-  steering?: 'hidraulica' | 'eletrica' | 'mecanica' | '';
-  fuel?: string;
-  position?: string;
+  abs?: 'com_abs' | 'sem_abs' | '';
   airConditioning?: 'com_ar' | 'sem_ar' | '';
+  steering?: 'hidraulica' | 'eletrica' | 'mecanica' | '';
   notes?: string;
-  answers?: Record<string, string>;
+  plateOrChassis?: string;
 }
 
-export interface ParsedCodeItem {
+export interface AftermarketBrand {
   brand: string;
+  badge: '1ª Linha' | 'Original Montadora' | 'Melhor Custo-Benefício' | 'Mais Vendida' | 'Homologada';
   code: string;
-  category: 'original' | 'aftermarket' | 'warning';
-  notes?: string;
-  catalogUrl?: string;
-  catalogName?: string;
-  application?: string;
-}
-
-export type ReferenceCode = ParsedCodeItem;
-
-export interface VerifiedSource {
-  title: string;
-  uri: string;
-}
-
-export interface OfficialCatalogPortal {
-  brand: string;
-  name: string;
-  url: string;
-  searchUrl?: string;
-  badge: string;
-}
-
-export interface ParsedAlertItem {
-  type: 'lote' | 'opcional' | 'falha' | 'mecanica' | 'geral';
-  title: string;
+  warranty: string;
   description: string;
+  directCatalogUrl?: string;
+  isTopChoice?: boolean;
 }
 
-export interface ParsedRelatedItem {
-  component: string;
-  brand?: string;
-  code?: string;
-  fullText: string;
+export interface OEMCode {
+  code: string;
+  note?: string;
 }
 
-export interface FunctionCallInfo {
-  functionName: string;
-  parameters: {
-    montadora?: string;
-    carro: string;
-    geracao_ou_modelo?: string;
-    ano?: string;
-    motor?: string;
-    item: string;
-    especificacoes?: string;
-  };
-  source: string;
-  matchesCount: number;
-  oemCode?: string;
-  brandsCount: number;
-  executedAt?: number;
+export interface TechnicalSpec {
+  label: string;
+  value: string;
 }
 
-export interface QueryResult {
+export interface CrossSellingItem {
+  part: string;
+  reason: string;
+  urgency: 'obrigatorio' | 'recomendado' | 'preventivo';
+}
+
+export interface RioClaroSupplier {
+  id: string;
+  name: string;
+  category: 'Suspensão e Freios' | 'Motor e Transmissão' | 'Injeção Eletrônica e Elétrica' | 'Geral e Balcão Multimarcas';
+  address: string;
+  neighborhood: string;
+  phone: string;
+  whatsapp?: string;
+  specialty: string;
+  isPitStopOrPartner?: boolean;
+  deliverySpeed?: string;
+}
+
+export interface OfficialSource {
+  title: string;
+  url: string;
+}
+
+export interface PartSearchResult {
   id: string;
   timestamp: number;
-  query: QueryParams;
-  rawMarkdown: string;
-  hasUnresolvedQuestions: boolean;
-  confirmationQuestions: string[];
-  codes: ParsedCodeItem[];
-  technicalAlerts: string[];
-  structuredAlerts?: ParsedAlertItem[];
-  relatedParts: {
-    similars: string[];
-    complementary: string[];
-    structuredItems?: ParsedRelatedItem[];
-  };
-  visualInspection: {
-    searchTerm: string;
-    description: string;
-  };
-  suppliersRioClaro: string[];
-  verifiedSources?: VerifiedSource[];
-  officialCatalogs?: OfficialCatalogPortal[];
-  usedFallback?: boolean;
-  quotaExceeded?: boolean;
-  aiProvider?: string;
-  functionCallInfo?: FunctionCallInfo;
+  query: SearchQuery;
+  vehicleSummary: string;
+  partCategory: string;
+  quantityNeeded: string;
+  oemCodes: OEMCode[];
+  aftermarketBrands: AftermarketBrand[];
+  criticalAlerts: string[];
+  technicalSpecs: TechnicalSpec[];
+  crossSelling: CrossSellingItem[];
+  phoneSalesPitch: string;
+  whatsappMessage: string;
+  rioClaroSuppliers: RioClaroSupplier[];
+  officialSources: OfficialSource[];
+  provider: string;
+  isOfflineFallback: boolean;
+  rawAnalysis?: string;
 }
 
+export interface HistoryItem {
+  id: string;
+  timestamp: number;
+  query: SearchQuery;
+  vehicleSummary: string;
+  partCategory: string;
+  topCode: string;
+  topBrand: string;
+  result: PartSearchResult;
+}
 
-export interface VehiclePreset {
-  title: string;
-  vehicle: string;
-  year: string;
-  part: string;
-  engine?: string;
-  notes?: string;
+export interface FollowUpMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  text: string;
+  timestamp: number;
 }

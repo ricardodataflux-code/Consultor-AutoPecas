@@ -1,381 +1,76 @@
 import React, { useState, useEffect } from 'react';
-import { Header } from './components/Header';
-import { QueryForm } from './components/QueryForm';
-import { ResultView } from './components/ResultView';
-import { BrandsModal } from './components/BrandsModal';
-import { SuppliersModal } from './components/SuppliersModal';
-import { HistoryDrawer } from './components/HistoryDrawer';
-import { TecDocModal } from './components/TecDocModal';
-import { QueryParams, QueryResult } from './types';
-import { parseSeniorClerkMarkdown } from './utils/parser';
-import { AlertCircle, RefreshCw, Sparkles, CheckCircle2, ShieldAlert } from 'lucide-react';
-
-const LOCAL_STORAGE_KEY = 'auto_pecas_balcao_history_v1';
+import { Sparkles, Terminal, CheckCircle2, RefreshCw } from 'lucide-react';
 
 export default function App() {
-  const [activeParams, setActiveParams] = useState<QueryParams | null>(null);
-  const [activeResult, setActiveResult] = useState<QueryResult | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('Consultando catálogos...');
-  const [error, setError] = useState<string | null>(null);
-  const [formResetKey, setFormResetKey] = useState(0);
+  const [serverStatus, setServerStatus] = useState<string>('verificando...');
+  const [isChecking, setIsChecking] = useState<boolean>(false);
 
-  // Modals & Drawers
-  const [isBrandsModalOpen, setIsBrandsModalOpen] = useState(false);
-  const [isSuppliersModalOpen, setIsSuppliersModalOpen] = useState(false);
-  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
-  const [isTecDocModalOpen, setIsTecDocModalOpen] = useState(false);
-
-
-  // History
-  const [history, setHistory] = useState<QueryResult[]>(() => {
+  const checkHealth = async () => {
+    setIsChecking(true);
     try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
+      const res = await fetch('/api/health');
+      if (res.ok) {
+        const data = await res.json();
+        setServerStatus(`Online (${data.status})`);
+      } else {
+        setServerStatus('Indisponível');
+      }
     } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(history.slice(0, 20)));
-    } catch (e) {
-      console.error('Falha ao salvar histórico:', e);
-    }
-  }, [history]);
-
-  // Loading message animator
-  useEffect(() => {
-    if (!isLoading) return;
-    const messages = [
-      'IA do Google conectando e pesquisando nos catálogos oficiais...',
-      'Consultando catálogos de fabricantes (Nakata, Cobreq, Fras-le, Bosch, Cofap, LUK, Monroe)...',
-      'Identificando aplicação exata para o veículo, motorização e opcionais selecionados...',
-      'Cruzando códigos originais OEM com peças de 1ª linha e fornecedores...',
-    ];
-    let idx = 0;
-    const interval = setInterval(() => {
-      idx = (idx + 1) % messages.length;
-      setLoadingMessage(messages[idx]);
-    }, 2200);
-
-    return () => clearInterval(interval);
-  }, [isLoading]);
-
-  // Keyboard shortcut listener (Esc for clean new query / close)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (isTecDocModalOpen) setIsTecDocModalOpen(false);
-        else if (isBrandsModalOpen) setIsBrandsModalOpen(false);
-        else if (isSuppliersModalOpen) setIsSuppliersModalOpen(false);
-        else if (isHistoryDrawerOpen) setIsHistoryDrawerOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isTecDocModalOpen, isBrandsModalOpen, isSuppliersModalOpen, isHistoryDrawerOpen]);
-
-
-  const executeQuery = async (params: QueryParams, answers?: Record<string, string>) => {
-    setIsLoading(true);
-    setError(null);
-    setActiveParams(params);
-
-    try {
-      const response = await fetch('/api/query-part', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vehicle: params.vehicle,
-          brand: params.brand,
-          model: params.model,
-          year: params.year,
-          part: params.part,
-          engine: params.engine,
-          engineSize: params.engineSize,
-          engineVersion: params.engineVersion,
-          abs: params.abs,
-          transmission: params.transmission,
-          steering: params.steering,
-          fuel: params.fuel,
-          position: params.position,
-          airConditioning: params.airConditioning,
-          notes: params.notes,
-          answers: answers || params.answers,
-        }),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Erro HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // Remove any <thinking> blocks the model might have generated
-      const cleanMarkdown = (data.markdown || '').replace(/<thinking>[\s\S]*?<\/thinking>/g, '').trim();
-
-      const parsedResult = parseSeniorClerkMarkdown(cleanMarkdown, {
-        ...params,
-        answers: answers || params.answers,
-      });
-
-      if (data.verifiedSources && data.verifiedSources.length > 0) {
-        parsedResult.verifiedSources = data.verifiedSources;
-      }
-      parsedResult.usedFallback = data.usedFallback;
-      parsedResult.quotaExceeded = data.quotaExceeded;
-      parsedResult.aiProvider = data.aiProvider;
-      if (data.functionCallInfo) {
-        parsedResult.functionCallInfo = data.functionCallInfo;
-      }
-
-      setActiveResult(parsedResult);
-
-      // Add to history
-      setHistory((prev) => [
-        parsedResult,
-        ...prev.filter((item) => item.id !== parsedResult.id),
-      ]);
-
-      // Scroll to result smoothly
-      setTimeout(() => {
-        const el = document.getElementById('card-reference-codes') || document.getElementById('card-confirmation-questions');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 150);
-    } catch (err: any) {
-      console.error('Erro na requisição:', err);
-      setError(
-        err.message ||
-          'Não foi possível consultar os catálogos no momento. Verifique sua conexão e tente novamente.'
-      );
+      setServerStatus('Offline');
     } finally {
-      setIsLoading(false);
+      setIsChecking(false);
     }
   };
 
-  const handleFormSubmit = (params: QueryParams) => {
-    executeQuery(params);
-  };
-
-  const handleAnswerConfirmations = (answers: Record<string, string>) => {
-    if (!activeParams) return;
-    executeQuery(activeParams, answers);
-  };
-
-  const handleQueryRelatedPart = (partName: string) => {
-    if (!activeParams) return;
-    const updated: QueryParams = {
-      ...activeParams,
-      part: partName,
-      answers: undefined,
-    };
-    executeQuery(updated);
-  };
-
-  const handleNewQuery = () => {
-    setActiveResult(null);
-    setActiveParams(null);
-    setError(null);
-    setFormResetKey((prev) => prev + 1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-
-    // Focar no primeiro campo para atendimento imediato
-    setTimeout(() => {
-      const input = document.getElementById('input-part') as HTMLInputElement | null;
-      if (input) {
-        input.focus();
-        input.select();
-      }
-    }, 60);
-  };
-
-  // Atalho de teclado global Esc para Nova Consulta limpa
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !isBrandsModalOpen && !isSuppliersModalOpen && !isHistoryDrawerOpen) {
-        handleNewQuery();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isBrandsModalOpen, isSuppliersModalOpen, isHistoryDrawerOpen]);
-
-  const handleSelectFromHistory = (result: QueryResult) => {
-    setActiveParams(result.query);
-    setActiveResult(result);
-    setError(null);
-  };
-
-  const handleClearHistory = () => {
-    setHistory([]);
-    localStorage.removeItem(LOCAL_STORAGE_KEY);
-  };
+    checkHealth();
+  }, []);
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-950 flex flex-col font-sans antialiased">
-      {/* Top Header */}
-      <Header
-        onNewQuery={handleNewQuery}
-        onOpenBrands={() => setIsBrandsModalOpen(true)}
-        onOpenTecDoc={() => setIsTecDocModalOpen(true)}
-      />
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-center p-6 antialiased selection:bg-zinc-800">
+      <div className="max-w-md w-full bg-zinc-900/80 border border-zinc-800/80 rounded-2xl p-8 shadow-2xl backdrop-blur-sm text-center">
+        {/* Icon */}
+        <div className="w-14 h-14 mx-auto mb-6 rounded-2xl bg-zinc-800 border border-zinc-700/60 flex items-center justify-center text-zinc-200 shadow-inner">
+          <Sparkles className="w-7 h-7" />
+        </div>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* Error Alert if any */}
-        {error && (
-          <div className="bg-white border-2 border-zinc-950 rounded-xl p-4 flex items-start gap-3 shadow-xs">
-            <AlertCircle className="w-5 h-5 text-zinc-950 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h4 className="text-sm font-black text-zinc-950">Atenção no Balcão</h4>
-              <p className="text-xs text-zinc-700 mt-0.5">{error}</p>
-            </div>
-            <button
-              onClick={() => setError(null)}
-              className="text-xs font-bold text-zinc-950 underline hover:opacity-80"
-            >
-              Dispensar
-            </button>
+        {/* Title */}
+        <h1 className="text-xl font-semibold tracking-tight text-white mb-2">
+          Projeto Pronto do Zero
+        </h1>
+        <p className="text-sm text-zinc-400 leading-relaxed mb-6">
+          O projeto foi totalmente limpo e resetado. Digite o que você deseja construir a seguir.
+        </p>
+
+        {/* System info */}
+        <div className="bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-3.5 mb-6 text-left space-y-2 font-mono text-xs text-zinc-400">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-zinc-300">
+              <Terminal className="w-3.5 h-3.5 text-zinc-500" />
+              Stack:
+            </span>
+            <span className="text-zinc-200">Express + Vite + React</span>
           </div>
-        )}
 
-        {/* Query Input Section */}
-        <section id="section-query-form">
-          <QueryForm
-            key={formResetKey}
-            onSubmit={handleFormSubmit}
-            isLoading={isLoading}
-            initialParams={activeParams || undefined}
-            onNewQuery={handleNewQuery}
-          />
-        </section>
-
-        {/* Loading Banner with real steps */}
-        {isLoading && (
-          <div className="bg-white rounded-xl border border-zinc-300 p-6 shadow-xs flex flex-col items-center justify-center text-center space-y-3">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-zinc-200 border-t-zinc-950 animate-spin flex items-center justify-center" />
-              <RefreshCw className="w-5 h-5 text-zinc-950 absolute inset-0 m-auto animate-pulse" />
-            </div>
-            <div>
-              <h3 className="text-sm font-black text-zinc-950">
-                Processando Triagem de Balcão & Telefone
-              </h3>
-              <p className="text-xs text-zinc-600 font-medium mt-1">
-                {loadingMessage}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono">
-              <span>Balconista Sênior</span>
-              <span>•</span>
-              <span>44 Marcas de Reposição</span>
-              <span>•</span>
-              <span>Fornecedores Rio Claro - SP</span>
-            </div>
-          </div>
-        )}
-
-        {/* Active Result View */}
-        {activeResult && !isLoading && (
-          <section id="section-result-view">
-            <ResultView
-              result={activeResult}
-              onAnswerConfirmations={handleAnswerConfirmations}
-              onQueryRelatedPart={handleQueryRelatedPart}
-              isLoading={isLoading}
-              onNewQuery={handleNewQuery}
-            />
-          </section>
-        )}
-
-        {/* Idle Instructions / Empty State */}
-        {!activeResult && !isLoading && (
-          <div className="bg-white rounded-xl border border-zinc-200 p-8 text-center shadow-xs">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-950 text-white flex items-center justify-center mx-auto mb-3 shadow-xs">
-              <Sparkles className="w-6 h-6 text-zinc-200" />
-            </div>
-            <h3 className="text-base font-black text-zinc-950">
-              Pronto para Atender no Balcão ou Telefone
-            </h3>
-            <p className="text-xs text-zinc-600 max-w-lg mx-auto mt-1 leading-relaxed">
-              Informe a peça e o veículo acima ou selecione um dos atalhos rápidos. O assistente sênior aplicará a triagem de catálogos automotivos para garantir a aplicação correta em segundos.
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-2xl mx-auto mt-6 text-left">
-              <div className="p-3.5 rounded-lg bg-zinc-50 border border-zinc-200">
-                <div className="text-xs font-black text-zinc-950 mb-1 flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-zinc-950 text-white text-[10px] flex items-center justify-center font-bold">1</span>
-                  Regra de Triagem
-                </div>
-                <p className="text-[11px] text-zinc-600 leading-normal">
-                  Se faltar motor ou ano que altere a peça, perguntas de confirmação serão feitas antes de fechar os códigos.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-lg bg-zinc-50 border border-zinc-200">
-                <div className="text-xs font-black text-zinc-950 mb-1 flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-zinc-950 text-white text-[10px] flex items-center justify-center font-bold">2</span>
-                  44 Marcas Prioritárias
-                </div>
-                <p className="text-[11px] text-zinc-600 leading-normal">
-                  Códigos originais e marcas líderes: LUK, Nakata, Monroe, Bosch, Cofap, Mahle, Tecfil, Gates, Cobreq, etc.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-lg bg-zinc-50 border border-zinc-200">
-                <div className="text-xs font-black text-zinc-950 mb-1 flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded-full bg-zinc-950 text-white text-[10px] flex items-center justify-center font-bold">3</span>
-                  Rio Claro - SP
-                </div>
-                <p className="text-[11px] text-zinc-600 leading-normal">
-                  Indicação de fornecedores locais com entrega rápida e contato direto no WhatsApp para não perder a venda.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-zinc-950 text-zinc-400 text-xs py-4 border-t border-zinc-900 mt-auto print:hidden">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="font-black text-white">AutoPeças Balcão Pro</span>
-            <span>•</span>
-            <span>Roncoli - Triagem Balcão (Rio Claro - SP)</span>
-          </div>
-          <div className="text-zinc-500 text-[11px]">
-            Base de dados: Catálogos Oficiais das 44 Fabricantes • Rio Claro - SP
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-zinc-300">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+              Servidor API:
+            </span>
+            <span className="text-emerald-400 font-medium">{serverStatus}</span>
           </div>
         </div>
-      </footer>
 
-      {/* Modals & Drawers */}
-      <BrandsModal
-        isOpen={isBrandsModalOpen}
-        onClose={() => setIsBrandsModalOpen(false)}
-      />
-
-      <SuppliersModal
-        isOpen={isSuppliersModalOpen}
-        onClose={() => setIsSuppliersModalOpen(false)}
-      />
-
-      <TecDocModal
-        isOpen={isTecDocModalOpen}
-        onClose={() => setIsTecDocModalOpen(false)}
-      />
-
-      <HistoryDrawer
-        isOpen={isHistoryDrawerOpen}
-        onClose={() => setIsHistoryDrawerOpen(false)}
-        history={history}
-        onSelectQuery={handleSelectFromHistory}
-        onClearHistory={handleClearHistory}
-      />
+        {/* Action button */}
+        <button
+          onClick={checkHealth}
+          disabled={isChecking}
+          className="w-full py-2.5 px-4 rounded-xl bg-zinc-100 text-zinc-950 font-medium text-xs hover:bg-white active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${isChecking ? 'animate-spin' : ''}`} />
+          Testar Conexão
+        </button>
+      </div>
     </div>
   );
 }
